@@ -51,10 +51,28 @@ body {
   color: var(--muted);
 }
 .ops-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 10px;
   border-radius: var(--radius);
   font-size: var(--text-ui);
   color: var(--muted);
+}
+.ops-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--foreground);
+  color: var(--surface);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
 }
 .ops-nav-link:hover {
   color: var(--foreground);
@@ -147,6 +165,52 @@ body {
 .ops-dot.is-off {
   background: transparent;
   border: 1px solid var(--faint);
+}
+
+/* ---- Inbox rows — Linear's notification anatomy: unread dot, status
+   icon, bold-while-unread title, quiet metadata right-aligned. ---- */
+.ops-ticket {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px 9px 8px;
+  font-size: var(--text-ui);
+}
+.ops-ticket:hover {
+  background: var(--sunken);
+}
+.ops-ticket-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  flex-shrink: 0;
+}
+.ops-unread-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--foreground);
+}
+.ops-ticket-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.ops-ticket.is-unread .ops-ticket-title {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.ops-ticket-carries {
+  flex-shrink: 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: var(--text-meta);
+  letter-spacing: var(--tracking-meta);
+  color: var(--faint);
+  white-space: nowrap;
 }
 
 .ops-input {

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/lib/session";
 import { ConvexClientProvider } from "./ConvexClientProvider";
+import { FeedbackLink } from "./components/FeedbackLink";
 import { Guard } from "./components/Guard";
 import { NavLink } from "./components/NavLink";
 import { SignOut } from "./components/SignOut";
@@ -35,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 </span>
                 <nav className="flex items-center gap-1">
                   <NavLink href="/">Overview</NavLink>
-                  <NavLink href="/feedback">Feedback</NavLink>
+                  <FeedbackLink />
                   <NavLink href="/suggestions">Suggestions</NavLink>
                   <NavLink href="/calls">AI calls</NavLink>
                 </nav>

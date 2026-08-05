@@ -7,6 +7,7 @@ import { useMutation, useQuery } from "convex/react";
 import { adminApi, type TicketStatus } from "@/lib/api";
 import { when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
+import { StatusIcon } from "../../components/StatusIcon";
 
 const STATUSES: { id: TicketStatus; label: string }[] = [
   { id: "new", label: "New" },
@@ -53,9 +54,10 @@ export default function FeedbackDetail() {
           {STATUSES.map((s) => (
             <button
               key={s.id}
-              className={`ops-chip${row.status === s.id ? " is-on" : ""}`}
+              className={`ops-chip inline-flex items-center gap-1.5${row.status === s.id ? " is-on" : ""}`}
               onClick={() => void setStatus({ token, id: row._id, status: s.id })}
             >
+              <StatusIcon status={s.id} />
               {s.label}
             </button>
           ))}

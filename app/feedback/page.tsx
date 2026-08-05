@@ -6,29 +6,22 @@ import { useQuery } from "convex/react";
 import { adminApi, type TicketStatus } from "@/lib/api";
 import { shortUser, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
+import { StatusIcon } from "../components/StatusIcon";
 
 const KINDS = [
   { id: undefined, label: "All" },
-  { id: "issue" as const, label: "Bug reports" },
-  { id: "wish" as const, label: "Feature requests" },
+  { id: "issue" as const, label: "Bugs" },
+  { id: "wish" as const, label: "Features" },
 ];
 
 const STATUSES: { id: TicketStatus | undefined; label: string }[] = [
-  { id: undefined, label: "Any status" },
+  { id: undefined, label: "All" },
   { id: "new", label: "New" },
   { id: "seen", label: "Seen" },
   { id: "in_progress", label: "In progress" },
   { id: "done", label: "Done" },
   { id: "declined", label: "Declined" },
 ];
-
-const DOT: Record<TicketStatus, string> = {
-  new: " is-new",
-  seen: "",
-  in_progress: " is-warn",
-  done: " is-ok",
-  declined: " is-off",
-};
 
 export default function FeedbackInbox() {
   const [kind, setKind] = useState<"issue" | "wish" | undefined>(undefined);
@@ -42,10 +35,10 @@ export default function FeedbackInbox() {
   });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold tracking-tight">Feedback</h1>
-        <div className="flex flex-wrap gap-1.5">
+        <h1 className="text-lg font-semibold tracking-tight">Inbox</h1>
+        <div className="flex flex-wrap items-center gap-1.5">
           {KINDS.map((k) => (
             <button
               key={k.label}
@@ -55,7 +48,7 @@ export default function FeedbackInbox() {
               {k.label}
             </button>
           ))}
-          <span className="mx-1 w-px self-stretch bg-border" aria-hidden />
+          <span className="mx-1 h-4 w-px self-center bg-border" aria-hidden />
           {STATUSES.map((s) => (
             <button
               key={s.label}
@@ -72,58 +65,45 @@ export default function FeedbackInbox() {
         {result === undefined ? (
           <p className="p-4 text-muted">Loading…</p>
         ) : result.page.length === 0 ? (
-          <p className="p-4 text-[13px] text-muted">Nothing here yet.</p>
+          <p className="p-4 text-[13px] text-muted">Inbox zero.</p>
         ) : (
-          <table className="ops-table">
-            <thead>
-              <tr>
-                <th aria-label="Status" />
-                <th>Kind</th>
-                <th>Report</th>
-                <th>Carries</th>
-                <th>User</th>
-                <th className="num">When</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.page.map((f) => (
-                <tr key={f._id} className="hover:bg-sunken">
-                  <td className="w-6">
-                    <span
-                      className={`ops-dot${DOT[f.status]}`}
-                      title={f.status.replace("_", " ")}
-                    />
-                  </td>
-                  <td className="whitespace-nowrap">
-                    <span className="ops-meta">
+          <ul>
+            {result.page.map((f) => {
+              const unread = f.status === "new";
+              return (
+                <li key={f._id} className="border-b border-border last:border-none">
+                  <Link
+                    href={`/feedback/${f._id}`}
+                    className={`ops-ticket${unread ? " is-unread" : ""}`}
+                  >
+                    <span className="ops-ticket-slot" aria-hidden>
+                      {unread && <span className="ops-unread-dot" />}
+                    </span>
+                    <StatusIcon status={f.status} />
+                    <span className="ops-meta w-9 shrink-0">
                       {f.kind === "issue" ? "bug" : "wish"}
                     </span>
-                  </td>
-                  <td className="max-w-md">
-                    <Link
-                      href={`/feedback/${f._id}`}
-                      className="block truncate hover:underline"
-                    >
-                      {f.text}
-                    </Link>
-                  </td>
-                  <td className="whitespace-nowrap text-[12px] text-muted">
-                    {[
-                      f.screenshotUrl && "shot",
-                      f.replayUrl && "replay",
-                      f.consoleLog && "console",
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || "—"}
-                  </td>
-                  <td className="whitespace-nowrap font-mono text-[12px] text-muted">
-                    {shortUser(f.ownerId)}
-                  </td>
-                  <td className="num text-[12px] text-muted">{when(f.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <span className="ops-ticket-title">{f.text}</span>
+                    <span className="ops-ticket-carries">
+                      {[
+                        f.screenshotUrl && "shot",
+                        f.replayUrl && "replay",
+                        f.consoleLog && "console",
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                    <span className="w-16 shrink-0 text-right font-mono text-[11px] text-faint">
+                      {shortUser(f.ownerId)}
+                    </span>
+                    <span className="w-14 shrink-0 text-right text-[12px] text-faint">
+                      {when(f.createdAt)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
     </div>

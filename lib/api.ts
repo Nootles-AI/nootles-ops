@@ -135,6 +135,9 @@ export const adminApi = {
     },
     Page<FeedbackRow>
   >("admin:feedbackList"),
+  feedbackNewCount: makeFunctionReference<"query", { token: string }, number>(
+    "admin:feedbackNewCount",
+  ),
   feedbackGet: makeFunctionReference<
     "query",
     { token: string; id: string },
