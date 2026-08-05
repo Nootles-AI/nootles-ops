@@ -9,6 +9,8 @@ import { makeFunctionReference } from "convex/server";
 
 export type TicketStatus = "new" | "seen" | "in_progress" | "done" | "declined";
 
+export type TicketPriority = "urgent" | "high" | "medium" | "low";
+
 export type FeedbackRow = {
   _id: string;
   _creationTime: number;
@@ -24,6 +26,7 @@ export type FeedbackRow = {
   replayUrl?: string;
   env: { sha?: string; ua: string; viewport: string };
   status: TicketStatus;
+  priority?: TicketPriority;
   createdAt: number;
 };
 
@@ -148,6 +151,16 @@ export const adminApi = {
     { token: string; id: string; status: TicketStatus },
     null
   >("admin:feedbackSetStatus"),
+  feedbackSetPriority: makeFunctionReference<
+    "mutation",
+    { token: string; id: string; priority?: TicketPriority },
+    null
+  >("admin:feedbackSetPriority"),
+  feedbackSetKind: makeFunctionReference<
+    "mutation",
+    { token: string; id: string; kind: "issue" | "wish" },
+    null
+  >("admin:feedbackSetKind"),
   suggestionStats: makeFunctionReference<
     "query",
     { token: string; sinceMs: number },

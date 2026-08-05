@@ -4,9 +4,10 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
-import { adminApi, type TicketStatus } from "@/lib/api";
+import { adminApi, type TicketPriority, type TicketStatus } from "@/lib/api";
 import { when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
+import { PriorityIcon } from "../../components/PriorityIcon";
 import { StatusIcon } from "../../components/StatusIcon";
 
 const STATUSES: { id: TicketStatus; label: string }[] = [
@@ -17,11 +18,21 @@ const STATUSES: { id: TicketStatus; label: string }[] = [
   { id: "declined", label: "Declined" },
 ];
 
+const PRIORITIES: { id: TicketPriority | undefined; label: string }[] = [
+  { id: undefined, label: "None" },
+  { id: "low", label: "Low" },
+  { id: "medium", label: "Medium" },
+  { id: "high", label: "High" },
+  { id: "urgent", label: "Urgent" },
+];
+
 export default function FeedbackDetail() {
   const { id } = useParams<{ id: string }>();
   const token = useAdminToken();
   const row = useQuery(adminApi.feedbackGet, { token, id });
   const setStatus = useMutation(adminApi.feedbackSetStatus);
+  const setPriority = useMutation(adminApi.feedbackSetPriority);
+  const setKind = useMutation(adminApi.feedbackSetKind);
 
   // Opening a ticket is what "seen" means — nobody should file that by hand.
   useEffect(() => {
@@ -62,6 +73,41 @@ export default function FeedbackDetail() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="ops-meta mr-1">Priority</span>
+        {PRIORITIES.map((p) => (
+          <button
+            key={p.label}
+            className={`ops-chip inline-flex items-center gap-1.5${
+              (row.priority ?? undefined) === p.id ? " is-on" : ""
+            }`}
+            onClick={() =>
+              void setPriority({
+                token,
+                id: row._id,
+                ...(p.id ? { priority: p.id } : {}),
+              })
+            }
+          >
+            <PriorityIcon priority={p.id} />
+            {p.label}
+          </button>
+        ))}
+        <span className="mx-1 h-4 w-px self-center bg-border" aria-hidden />
+        <button
+          className="ops-chip"
+          onClick={() =>
+            void setKind({
+              token,
+              id: row._id,
+              kind: row.kind === "issue" ? "wish" : "issue",
+            })
+          }
+        >
+          Move to {row.kind === "issue" ? "feature requests" : "bug reports"}
+        </button>
       </div>
 
       <section className="ops-card p-4">
