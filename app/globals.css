@@ -1,26 +1,155 @@
 @import "tailwindcss";
 
+/* Nootles-adjacent, light only: white surfaces, warm-gray ink, mono for
+   metadata. The dashboard should read like the product's back office. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: oklch(0.985 0.002 90);
+  --surface: #ffffff;
+  --sunken: oklch(0.965 0.003 90);
+  --border: oklch(0.92 0.004 90);
+  --border-strong: oklch(0.85 0.005 90);
+  --foreground: oklch(0.25 0.005 90);
+  --muted: oklch(0.5 0.006 90);
+  --faint: oklch(0.65 0.005 90);
+  --ok: oklch(0.55 0.12 150);
+  --bad: oklch(0.55 0.16 25);
+
+  --text-meta: 11px;
+  --text-ui: 13px;
+  --text-body: 14px;
+  --tracking-meta: 0.06em;
+  --radius: 6px;
+  --radius-lg: 10px;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-border: var(--border);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--text-body);
+}
+
+/* ---- Chrome ---- */
+.ops-meta {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: var(--text-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ops-nav-link {
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  font-size: var(--text-ui);
+  color: var(--muted);
+}
+.ops-nav-link:hover {
+  color: var(--foreground);
+  background: var(--sunken);
+}
+.ops-nav-link.is-on {
+  color: var(--foreground);
+  background: var(--sunken);
+  font-weight: 500;
+}
+
+/* ---- Surfaces ---- */
+.ops-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.ops-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-ui);
+}
+.ops-table th {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: var(--text-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ops-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.ops-table tr:last-child td {
+  border-bottom: none;
+}
+.ops-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---- Controls ---- */
+.ops-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: var(--text-ui);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ops-chip:hover {
+  color: var(--foreground);
+  border-color: var(--border-strong);
+}
+.ops-chip.is-on {
+  color: var(--foreground);
+  border-color: var(--border-strong);
+  background: var(--sunken);
+  font-weight: 500;
+}
+
+/* ---- Status dots ---- */
+.ops-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--faint);
+}
+.ops-dot.is-new {
+  background: var(--foreground);
+}
+.ops-dot.is-ok {
+  background: var(--ok);
+}
+.ops-dot.is-bad {
+  background: var(--bad);
+}
+
+.ops-pre {
+  background: var(--sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow: auto;
+  max-height: 320px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }

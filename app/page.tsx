@@ -1,69 +1,172 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import Link from "next/link";
+import { useQuery } from "convex/react";
+import { adminApi } from "@/lib/api";
+import { pctOf, usd, when } from "@/lib/format";
+import { RangeChips, useRange } from "./components/Range";
+
+export default function Overview() {
+  const { range, setRange, sinceMs } = useRange();
+  const calls = useQuery(adminApi.aiCallStats, { sinceMs });
+  const suggestions = useQuery(adminApi.suggestionStats, { sinceMs });
+  const chat = useQuery(adminApi.chatStats, { sinceMs });
+  const newFeedback = useQuery(adminApi.feedbackList, {
+    paginationOpts: { numItems: 100, cursor: null },
+    status: "new",
+  });
+  const surveys = useQuery(adminApi.surveyList, {});
+
+  const cost = calls?.features.reduce((s, f) => s + f.costUsd, 0) ?? 0;
+  const shown = suggestions?.kinds.reduce((s, k) => s + k.shown, 0) ?? 0;
+  const accepted = suggestions?.kinds.reduce((s, k) => s + k.accepted, 0) ?? 0;
+  const survivalCount =
+    suggestions?.kinds.reduce((s, k) => s + k.survivalCount, 0) ?? 0;
+  const survivalTotal =
+    suggestions?.kinds.reduce((s, k) => s + k.survivalTotal, 0) ?? 0;
+  const pmf = surveys?.filter((s) => s.survey === "pmf" && !s.dismissed) ?? [];
+  const reasons =
+    surveys?.filter((s) => s.survey === "dismiss_reason" && s.answer) ?? [];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold tracking-tight">Overview</h1>
+        <RangeChips range={range} onChange={setRange} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat
+          label="Model spend"
+          value={usd(cost)}
+          note={calls ? `${calls.sampled} calls` : "…"}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+        <Stat
+          label="Suggestions shown"
+          value={shown.toLocaleString()}
+          note={`${pctOf(accepted, shown)} accepted`}
+        />
+        <Stat
+          label="Survival avg"
+          value={
+            survivalCount
+              ? `${Math.round((survivalTotal / survivalCount) * 100)}%`
+              : "–"
+          }
+          note={`${survivalCount} scored`}
+        />
+        <Stat
+          label="Chat turns"
+          value={(chat?.turns ?? 0).toLocaleString()}
+          note={chat ? `${chat.rewound} rewound` : "…"}
+        />
+      </div>
+
+      <section className="ops-card">
+        <header className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="ops-meta">Feedback inbox</h2>
+          <Link
+            href="/feedback"
+            className="text-[13px] text-muted hover:text-foreground"
+          >
+            Open inbox →
+          </Link>
+        </header>
+        {newFeedback === undefined ? (
+          <p className="p-4 text-muted">Loading…</p>
+        ) : newFeedback.page.length === 0 ? (
+          <p className="p-4 text-[13px] text-muted">
+            Nothing new. Reports land here with their screenshot, console tail,
+            and replay link.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        ) : (
+          <ul>
+            {newFeedback.page.slice(0, 6).map((f) => (
+              <li key={f._id} className="border-b border-border last:border-none">
+                <Link
+                  href={`/feedback/${f._id}`}
+                  className="flex items-baseline gap-3 px-4 py-2.5 hover:bg-sunken"
+                >
+                  <span className="ops-dot is-new shrink-0 self-center" />
+                  <span className="ops-meta shrink-0">
+                    {f.kind === "issue" ? "bug" : "wish"}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[13px]">
+                    {f.text}
+                  </span>
+                  <span className="shrink-0 text-[12px] text-faint">
+                    {when(f.createdAt)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <section className="ops-card p-4">
+          <h2 className="ops-meta">PMF · &ldquo;how disappointed?&rdquo;</h2>
+          {pmf.length === 0 ? (
+            <p className="mt-2 text-[13px] text-muted">
+              No answers yet — the question shows once, on day 3, to users with
+              an accepted suggestion.
+            </p>
+          ) : (
+            <ul className="mt-2 space-y-1 text-[13px]">
+              {tally(pmf.map((s) => s.answer ?? "")).map(([answer, n]) => (
+                <li key={answer} className="flex justify-between">
+                  <span>{answer}</span>
+                  <span className="text-muted">{n}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <section className="ops-card p-4">
+          <h2 className="ops-meta">Dismiss reasons · sampled</h2>
+          {reasons.length === 0 ? (
+            <p className="mt-2 text-[13px] text-muted">
+              No samples yet — asked after every ~15th dismissed suggestion.
+            </p>
+          ) : (
+            <ul className="mt-2 space-y-1 text-[13px]">
+              {tally(reasons.map((s) => s.answer ?? "")).map(([answer, n]) => (
+                <li key={answer} className="flex justify-between">
+                  <span>{answer}</span>
+                  <span className="text-muted">{n}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   );
+}
+
+function Stat({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string;
+  note: string;
+}) {
+  return (
+    <div className="ops-card p-4">
+      <p className="ops-meta">{label}</p>
+      <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight">
+        {value}
+      </p>
+      <p className="mt-0.5 text-[12px] text-muted">{note}</p>
+    </div>
+  );
+}
+
+function tally(values: string[]): [string, number][] {
+  const map = new Map<string, number>();
+  for (const value of values) map.set(value, (map.get(value) ?? 0) + 1);
+  return [...map.entries()].sort((a, b) => b[1] - a[1]);
 }
