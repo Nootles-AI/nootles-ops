@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { adminApi, type TicketStatus } from "@/lib/api";
@@ -42,16 +42,23 @@ export default function FeedbackInbox() {
     ...(status ? { status } : {}),
   });
 
+  const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!menu) return;
-    const close = () => setMenu(null);
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+    // Containment check, not stopPropagation: the app hydrates the whole
+    // document, so React's delegated events live on `document` too — a
+    // sibling listener there still fires whatever propagation was stopped.
+    const onDown = (e: PointerEvent) => {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      setMenu(null);
     };
-    document.addEventListener("pointerdown", close);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenu(null);
+    };
+    document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
     };
   }, [menu]);
@@ -146,10 +153,10 @@ export default function FeedbackInbox() {
 
       {menu && (
         <div
+          ref={menuRef}
           className="ops-menu"
           role="menu"
           style={{ left: menu.x, top: menu.y }}
-          onPointerDown={(e) => e.stopPropagation()}
         >
           {menu.status !== "new" && (
             <>
