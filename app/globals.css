@@ -213,6 +213,38 @@ body {
   white-space: nowrap;
 }
 
+/* ---- Context menu ---- */
+.ops-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 176px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 1px 2px oklch(0.25 0.005 90 / 0.06),
+    0 8px 24px oklch(0.25 0.005 90 / 0.12);
+}
+.ops-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  font-size: var(--text-ui);
+  text-align: left;
+}
+.ops-menu-item:hover {
+  background: var(--sunken);
+}
+.ops-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
 .ops-input {
   width: 100%;
   padding: 7px 10px;

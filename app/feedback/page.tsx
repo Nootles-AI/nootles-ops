@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { adminApi, type TicketStatus } from "@/lib/api";
 import { shortUser, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
@@ -26,13 +26,41 @@ const STATUSES: { id: TicketStatus | undefined; label: string }[] = [
 export default function FeedbackInbox() {
   const [kind, setKind] = useState<"issue" | "wish" | undefined>(undefined);
   const [status, setStatus] = useState<TicketStatus | undefined>(undefined);
+  /** A right-clicked row's menu, in viewport coordinates. */
+  const [menu, setMenu] = useState<{
+    id: string;
+    status: TicketStatus;
+    x: number;
+    y: number;
+  } | null>(null);
   const token = useAdminToken();
+  const setTicketStatus = useMutation(adminApi.feedbackSetStatus);
   const result = useQuery(adminApi.feedbackList, {
     token,
     paginationOpts: { numItems: 200, cursor: null },
     ...(kind ? { kind } : {}),
     ...(status ? { status } : {}),
   });
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menu]);
+
+  const act = (to: TicketStatus) => {
+    if (!menu) return;
+    void setTicketStatus({ token, id: menu.id, status: to }).catch(() => {});
+    setMenu(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -75,6 +103,15 @@ export default function FeedbackInbox() {
                   <Link
                     href={`/feedback/${f._id}`}
                     className={`ops-ticket${unread ? " is-unread" : ""}`}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setMenu({
+                        id: f._id,
+                        status: f.status,
+                        x: e.clientX,
+                        y: e.clientY,
+                      });
+                    }}
                   >
                     <span className="ops-ticket-slot" aria-hidden>
                       {unread && <span className="ops-unread-dot" />}
@@ -106,6 +143,39 @@ export default function FeedbackInbox() {
           </ul>
         )}
       </section>
+
+      {menu && (
+        <div
+          className="ops-menu"
+          role="menu"
+          style={{ left: menu.x, top: menu.y }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {menu.status !== "new" && (
+            <>
+              <button className="ops-menu-item" role="menuitem" onClick={() => act("new")}>
+                <span className="ops-unread-dot" aria-hidden />
+                Mark as unread
+              </button>
+              <div className="ops-menu-sep" aria-hidden />
+            </>
+          )}
+          {STATUSES.filter(
+            (s): s is { id: TicketStatus; label: string } =>
+              s.id !== undefined && s.id !== "new" && s.id !== menu.status,
+          ).map((s) => (
+            <button
+              key={s.id}
+              className="ops-menu-item"
+              role="menuitem"
+              onClick={() => act(s.id)}
+            >
+              <StatusIcon status={s.id} />
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
