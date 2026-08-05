@@ -4,7 +4,13 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
-import { adminApi, type TicketPriority, type TicketStatus } from "@/lib/api";
+import {
+  adminApi,
+  CATEGORY_LABELS,
+  type TicketCategory,
+  type TicketPriority,
+  type TicketStatus,
+} from "@/lib/api";
 import { when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { PriorityIcon } from "../../components/PriorityIcon";
@@ -33,6 +39,7 @@ export default function FeedbackDetail() {
   const setStatus = useMutation(adminApi.feedbackSetStatus);
   const setPriority = useMutation(adminApi.feedbackSetPriority);
   const setKind = useMutation(adminApi.feedbackSetKind);
+  const setCategory = useMutation(adminApi.feedbackSetCategory);
 
   // Opening a ticket is what "seen" means — nobody should file that by hand.
   useEffect(() => {
@@ -95,6 +102,26 @@ export default function FeedbackDetail() {
             {p.label}
           </button>
         ))}
+        <span className="mx-1 h-4 w-px self-center bg-border" aria-hidden />
+        <span className="ops-meta mr-1">Category</span>
+        <select
+          className="ops-chip"
+          aria-label="Category"
+          value={row.category ?? "general"}
+          onChange={(e) =>
+            void setCategory({
+              token,
+              id: row._id,
+              category: e.target.value as TicketCategory,
+            })
+          }
+        >
+          {(Object.keys(CATEGORY_LABELS) as TicketCategory[]).map((c) => (
+            <option key={c} value={c}>
+              {CATEGORY_LABELS[c]}
+            </option>
+          ))}
+        </select>
         <span className="mx-1 h-4 w-px self-center bg-border" aria-hidden />
         <button
           className="ops-chip"

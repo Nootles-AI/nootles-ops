@@ -271,3 +271,15 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+.ops-ticket-cat {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  white-space: nowrap;
+}

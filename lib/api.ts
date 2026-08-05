@@ -11,6 +11,31 @@ export type TicketStatus = "new" | "seen" | "in_progress" | "done" | "declined";
 
 export type TicketPriority = "urgent" | "high" | "medium" | "low";
 
+export type TicketCategory =
+  | "canvas"
+  | "code"
+  | "math"
+  | "tables"
+  | "autocomplete"
+  | "chat"
+  | "editor"
+  | "sharing"
+  | "account"
+  | "general";
+
+export const CATEGORY_LABELS: Record<TicketCategory, string> = {
+  canvas: "Canvas & diagrams",
+  code: "Code",
+  math: "Math",
+  tables: "Tables",
+  autocomplete: "Autocomplete",
+  chat: "Chat agent",
+  editor: "Text editing",
+  sharing: "Sharing",
+  account: "Account & sign-in",
+  general: "General / other",
+};
+
 export type FeedbackRow = {
   _id: string;
   _creationTime: number;
@@ -27,6 +52,7 @@ export type FeedbackRow = {
   env: { sha?: string; ua: string; viewport: string };
   status: TicketStatus;
   priority?: TicketPriority;
+  category?: TicketCategory;
   createdAt: number;
 };
 
@@ -161,6 +187,11 @@ export const adminApi = {
     { token: string; id: string; kind: "issue" | "wish" },
     null
   >("admin:feedbackSetKind"),
+  feedbackSetCategory: makeFunctionReference<
+    "mutation",
+    { token: string; id: string; category?: TicketCategory },
+    null
+  >("admin:feedbackSetCategory"),
   suggestionStats: makeFunctionReference<
     "query",
     { token: string; sinceMs: number },

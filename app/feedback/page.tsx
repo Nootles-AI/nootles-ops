@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
-import { adminApi, type TicketPriority, type TicketStatus } from "@/lib/api";
+import {
+  adminApi,
+  CATEGORY_LABELS,
+  type TicketCategory,
+  type TicketPriority,
+  type TicketStatus,
+} from "@/lib/api";
 import { shortUser, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { PriorityIcon } from "../components/PriorityIcon";
@@ -43,6 +49,7 @@ const FILTERS_KEY = "nootles-ops:inbox-filters";
 type Filters = {
   kind?: "issue" | "wish";
   status?: TicketStatus;
+  category?: TicketCategory;
   sort: "newest" | "priority";
 };
 
@@ -55,6 +62,8 @@ function readFilters(): Filters | null {
     return {
       kind: p.kind === "issue" || p.kind === "wish" ? p.kind : undefined,
       status: STATUSES.some((s) => s.id === p.status) ? p.status : undefined,
+      category:
+        p.category && p.category in CATEGORY_LABELS ? p.category : undefined,
       sort: p.sort === "priority" ? "priority" : "newest",
     };
   } catch {
@@ -65,6 +74,7 @@ function readFilters(): Filters | null {
 export default function FeedbackInbox() {
   const [kind, setKind] = useState<"issue" | "wish" | undefined>(undefined);
   const [status, setStatus] = useState<TicketStatus | undefined>(undefined);
+  const [category, setCategory] = useState<TicketCategory | undefined>(undefined);
   const [sort, setSort] = useState<"newest" | "priority">("newest");
 
   // Restore the persisted view on the client. The default renders first so
@@ -75,13 +85,14 @@ export default function FeedbackInbox() {
     if (!saved) return;
     setKind(saved.kind);
     setStatus(saved.status);
+    setCategory(saved.category);
     setSort(saved.sort);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
-    localStorage.setItem(FILTERS_KEY, JSON.stringify({ kind, status, sort }));
-  }, [kind, status, sort]);
+    localStorage.setItem(FILTERS_KEY, JSON.stringify({ kind, status, category, sort }));
+  }, [kind, status, category, sort]);
   /** A right-clicked row's menu, in viewport coordinates. */
   const [menu, setMenu] = useState<{
     id: string;
@@ -143,14 +154,19 @@ export default function FeedbackInbox() {
     setMenu(null);
   };
 
-  const rows = result
+  const visible = result
+    ? category
+      ? result.page.filter((f) => (f.category ?? "general") === category)
+      : result.page
+    : undefined;
+  const rows = visible
     ? sort === "priority"
-      ? [...result.page].sort(
+      ? [...visible].sort(
           (a, b) =>
             (b.priority ? RANK[b.priority] : 0) -
               (a.priority ? RANK[a.priority] : 0) || b.createdAt - a.createdAt,
         )
-      : result.page
+      : visible
     : undefined;
 
   return (
@@ -185,6 +201,21 @@ export default function FeedbackInbox() {
           >
             Sort: {sort === "newest" ? "Newest" : "Priority"}
           </button>
+          <select
+            className="ops-chip"
+            aria-label="Filter by category"
+            value={category ?? ""}
+            onChange={(e) =>
+              setCategory((e.target.value || undefined) as TicketCategory | undefined)
+            }
+          >
+            <option value="">All categories</option>
+            {(Object.keys(CATEGORY_LABELS) as TicketCategory[]).map((c) => (
+              <option key={c} value={c}>
+                {CATEGORY_LABELS[c]}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -223,6 +254,11 @@ export default function FeedbackInbox() {
                       {f.kind === "issue" ? "bug" : "wish"}
                     </span>
                     <span className="ops-ticket-title">{f.text}</span>
+                    {f.category && f.category !== "general" && (
+                      <span className="ops-ticket-cat">
+                        {CATEGORY_LABELS[f.category]}
+                      </span>
+                    )}
                     <span className="ops-ticket-carries">
                       {[
                         f.screenshotUrl && "shot",
