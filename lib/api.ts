@@ -53,6 +53,7 @@ export type FeedbackRow = {
   status: TicketStatus;
   priority?: TicketPriority;
   category?: TicketCategory;
+  email?: string;
   createdAt: number;
 };
 

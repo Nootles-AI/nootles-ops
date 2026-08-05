@@ -268,8 +268,8 @@ export default function FeedbackInbox() {
                         .filter(Boolean)
                         .join(" · ")}
                     </span>
-                    <span className="w-16 shrink-0 text-right font-mono text-[11px] text-faint">
-                      {shortUser(f.ownerId)}
+                    <span className="max-w-40 shrink-0 truncate text-right font-mono text-[11px] text-faint">
+                      {f.email ?? shortUser(f.ownerId)}
                     </span>
                     <span className="w-14 shrink-0 text-right text-[12px] text-faint">
                       {when(f.createdAt)}

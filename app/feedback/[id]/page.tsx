@@ -154,7 +154,13 @@ export default function FeedbackDetail() {
             Watch session replay ↗
           </a>
         )}
-        <span className="ops-chip">user · {row.ownerId}</span>
+        {row.email ? (
+          <a href={`mailto:${row.email}`} className="ops-chip is-on">
+            {row.email} ✉
+          </a>
+        ) : (
+          <span className="ops-chip">user · {row.ownerId}</span>
+        )}
         {row.env.sha && <span className="ops-chip">build · {row.env.sha}</span>}
         <span className="ops-chip">viewport · {row.env.viewport}</span>
         {row.pageId && <span className="ops-chip">page · {row.pageId}</span>}
