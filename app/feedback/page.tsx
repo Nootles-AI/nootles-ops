@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
-import { adminApi } from "@/lib/api";
+import { adminApi, type TicketStatus } from "@/lib/api";
 import { shortUser, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 
@@ -13,18 +13,26 @@ const KINDS = [
   { id: "wish" as const, label: "Feature requests" },
 ];
 
-const STATUSES = [
+const STATUSES: { id: TicketStatus | undefined; label: string }[] = [
   { id: undefined, label: "Any status" },
-  { id: "new" as const, label: "New" },
-  { id: "seen" as const, label: "Seen" },
-  { id: "done" as const, label: "Done" },
+  { id: "new", label: "New" },
+  { id: "seen", label: "Seen" },
+  { id: "in_progress", label: "In progress" },
+  { id: "done", label: "Done" },
+  { id: "declined", label: "Declined" },
 ];
+
+const DOT: Record<TicketStatus, string> = {
+  new: " is-new",
+  seen: "",
+  in_progress: " is-warn",
+  done: " is-ok",
+  declined: " is-off",
+};
 
 export default function FeedbackInbox() {
   const [kind, setKind] = useState<"issue" | "wish" | undefined>(undefined);
-  const [status, setStatus] = useState<"new" | "seen" | "done" | undefined>(
-    undefined,
-  );
+  const [status, setStatus] = useState<TicketStatus | undefined>(undefined);
   const token = useAdminToken();
   const result = useQuery(adminApi.feedbackList, {
     token,
@@ -82,8 +90,8 @@ export default function FeedbackInbox() {
                 <tr key={f._id} className="hover:bg-sunken">
                   <td className="w-6">
                     <span
-                      className={`ops-dot${f.status === "new" ? " is-new" : f.status === "done" ? " is-ok" : ""}`}
-                      title={f.status}
+                      className={`ops-dot${DOT[f.status]}`}
+                      title={f.status.replace("_", " ")}
                     />
                   </td>
                   <td className="whitespace-nowrap">

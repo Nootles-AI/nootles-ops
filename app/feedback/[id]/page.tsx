@@ -1,19 +1,33 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
-import { adminApi } from "@/lib/api";
+import { adminApi, type TicketStatus } from "@/lib/api";
 import { when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 
-const STATUSES = ["new", "seen", "done"] as const;
+const STATUSES: { id: TicketStatus; label: string }[] = [
+  { id: "new", label: "New" },
+  { id: "seen", label: "Seen" },
+  { id: "in_progress", label: "In progress" },
+  { id: "done", label: "Done" },
+  { id: "declined", label: "Declined" },
+];
 
 export default function FeedbackDetail() {
   const { id } = useParams<{ id: string }>();
   const token = useAdminToken();
   const row = useQuery(adminApi.feedbackGet, { token, id });
   const setStatus = useMutation(adminApi.feedbackSetStatus);
+
+  // Opening a ticket is what "seen" means — nobody should file that by hand.
+  useEffect(() => {
+    if (row?.status === "new") {
+      void setStatus({ token, id: row._id, status: "seen" }).catch(() => {});
+    }
+  }, [row?.status, row?._id, token, setStatus]);
 
   if (row === undefined) return <p className="text-muted">Loading…</p>;
   if (row === null)
@@ -38,11 +52,11 @@ export default function FeedbackDetail() {
         <div className="ml-auto flex gap-1.5">
           {STATUSES.map((s) => (
             <button
-              key={s}
-              className={`ops-chip${row.status === s ? " is-on" : ""}`}
-              onClick={() => void setStatus({ token, id: row._id, status: s })}
+              key={s.id}
+              className={`ops-chip${row.status === s.id ? " is-on" : ""}`}
+              onClick={() => void setStatus({ token, id: row._id, status: s.id })}
             >
-              {s}
+              {s.label}
             </button>
           ))}
         </div>

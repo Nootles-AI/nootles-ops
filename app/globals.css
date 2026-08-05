@@ -13,6 +13,7 @@
   --faint: oklch(0.65 0.005 90);
   --ok: oklch(0.55 0.12 150);
   --bad: oklch(0.55 0.16 25);
+  --warn: oklch(0.7 0.13 75);
 
   --text-meta: 11px;
   --text-ui: 13px;
@@ -138,6 +139,14 @@ body {
 }
 .ops-dot.is-bad {
   background: var(--bad);
+}
+.ops-dot.is-warn {
+  background: var(--warn);
+}
+/* Declined / canceled: present, answered, out of the way. */
+.ops-dot.is-off {
+  background: transparent;
+  border: 1px solid var(--faint);
 }
 
 .ops-input {

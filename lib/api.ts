@@ -7,6 +7,8 @@ import { makeFunctionReference } from "convex/server";
  * dashboard breaking loudly on a mismatch is the behavior we want.
  */
 
+export type TicketStatus = "new" | "seen" | "in_progress" | "done" | "declined";
+
 export type FeedbackRow = {
   _id: string;
   _creationTime: number;
@@ -21,7 +23,7 @@ export type FeedbackRow = {
   projectId?: string;
   replayUrl?: string;
   env: { sha?: string; ua: string; viewport: string };
-  status: "new" | "seen" | "done";
+  status: TicketStatus;
   createdAt: number;
 };
 
@@ -129,7 +131,7 @@ export const adminApi = {
       token: string;
       paginationOpts: PaginationOpts;
       kind?: "issue" | "wish";
-      status?: "new" | "seen" | "done";
+      status?: TicketStatus;
     },
     Page<FeedbackRow>
   >("admin:feedbackList"),
@@ -140,7 +142,7 @@ export const adminApi = {
   >("admin:feedbackGet"),
   feedbackSetStatus: makeFunctionReference<
     "mutation",
-    { token: string; id: string; status: "new" | "seen" | "done" },
+    { token: string; id: string; status: TicketStatus },
     null
   >("admin:feedbackSetStatus"),
   suggestionStats: makeFunctionReference<
