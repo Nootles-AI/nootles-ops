@@ -3,12 +3,14 @@
 import { useQuery } from "convex/react";
 import { adminApi } from "@/lib/api";
 import { ms, pctOf, shortUser, when } from "@/lib/format";
+import { useAdminToken } from "@/lib/session";
 import { RangeChips, useRange } from "../components/Range";
 
 export default function Suggestions() {
+  const token = useAdminToken();
   const { range, setRange, sinceMs } = useRange();
-  const stats = useQuery(adminApi.suggestionStats, { sinceMs });
-  const recent = useQuery(adminApi.suggestionRecent, { limit: 50 });
+  const stats = useQuery(adminApi.suggestionStats, { token, sinceMs });
+  const recent = useQuery(adminApi.suggestionRecent, { token, limit: 50 });
 
   return (
     <div className="space-y-5">

@@ -3,12 +3,14 @@
 import { useQuery } from "convex/react";
 import { adminApi } from "@/lib/api";
 import { ms, shortUser, usd, when } from "@/lib/format";
+import { useAdminToken } from "@/lib/session";
 import { RangeChips, useRange } from "../components/Range";
 
 export default function Calls() {
+  const token = useAdminToken();
   const { range, setRange, sinceMs } = useRange();
-  const stats = useQuery(adminApi.aiCallStats, { sinceMs });
-  const recent = useQuery(adminApi.aiCallRecent, { limit: 50 });
+  const stats = useQuery(adminApi.aiCallStats, { token, sinceMs });
+  const recent = useQuery(adminApi.aiCallRecent, { token, limit: 50 });
 
   const maxDay = Math.max(...(stats?.costByDay.map((d) => d.costUsd) ?? [0]), 0);
 

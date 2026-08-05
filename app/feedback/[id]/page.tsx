@@ -5,12 +5,14 @@ import { useParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { adminApi } from "@/lib/api";
 import { when } from "@/lib/format";
+import { useAdminToken } from "@/lib/session";
 
 const STATUSES = ["new", "seen", "done"] as const;
 
 export default function FeedbackDetail() {
   const { id } = useParams<{ id: string }>();
-  const row = useQuery(adminApi.feedbackGet, { id });
+  const token = useAdminToken();
+  const row = useQuery(adminApi.feedbackGet, { token, id });
   const setStatus = useMutation(adminApi.feedbackSetStatus);
 
   if (row === undefined) return <p className="text-muted">Loading…</p>;
@@ -38,7 +40,7 @@ export default function FeedbackDetail() {
             <button
               key={s}
               className={`ops-chip${row.status === s ? " is-on" : ""}`}
-              onClick={() => void setStatus({ id: row._id, status: s })}
+              onClick={() => void setStatus({ token, id: row._id, status: s })}
             >
               {s}
             </button>

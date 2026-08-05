@@ -112,39 +112,50 @@ type Page<T> = { page: T[]; isDone: boolean; continueCursor: string };
 type PaginationOpts = { numItems: number; cursor: string | null };
 
 export const adminApi = {
-  me: makeFunctionReference<"query", Record<string, never>, { isAdmin: boolean }>(
-    "admin:me",
+  login: makeFunctionReference<
+    "mutation",
+    { username: string; password: string },
+    string
+  >("admin:login"),
+  logout: makeFunctionReference<"mutation", { token: string }, null>(
+    "admin:logout",
+  ),
+  validate: makeFunctionReference<"query", { token: string }, boolean>(
+    "admin:validate",
   ),
   feedbackList: makeFunctionReference<
     "query",
     {
+      token: string;
       paginationOpts: PaginationOpts;
       kind?: "issue" | "wish";
       status?: "new" | "seen" | "done";
     },
     Page<FeedbackRow>
   >("admin:feedbackList"),
-  feedbackGet: makeFunctionReference<"query", { id: string }, FeedbackRow | null>(
-    "admin:feedbackGet",
-  ),
+  feedbackGet: makeFunctionReference<
+    "query",
+    { token: string; id: string },
+    FeedbackRow | null
+  >("admin:feedbackGet"),
   feedbackSetStatus: makeFunctionReference<
     "mutation",
-    { id: string; status: "new" | "seen" | "done" },
+    { token: string; id: string; status: "new" | "seen" | "done" },
     null
   >("admin:feedbackSetStatus"),
   suggestionStats: makeFunctionReference<
     "query",
-    { sinceMs: number },
+    { token: string; sinceMs: number },
     { sampled: number; capped: boolean; kinds: SuggestionKindStats[] }
   >("admin:suggestionStats"),
   suggestionRecent: makeFunctionReference<
     "query",
-    { limit?: number; kind?: string },
+    { token: string; limit?: number; kind?: string },
     SuggestionRow[]
   >("admin:suggestionRecent"),
   aiCallStats: makeFunctionReference<
     "query",
-    { sinceMs: number },
+    { token: string; sinceMs: number },
     {
       sampled: number;
       capped: boolean;
@@ -153,15 +164,17 @@ export const adminApi = {
       spenders: { ownerId: string; costUsd: number }[];
     }
   >("admin:aiCallStats"),
-  aiCallRecent: makeFunctionReference<"query", { limit?: number }, AiCallRow[]>(
-    "admin:aiCallRecent",
-  ),
+  aiCallRecent: makeFunctionReference<
+    "query",
+    { token: string; limit?: number },
+    AiCallRow[]
+  >("admin:aiCallRecent"),
   chatStats: makeFunctionReference<
     "query",
-    { sinceMs: number },
+    { token: string; sinceMs: number },
     { turns: number; rewound: number; byStatus: { status: string; count: number }[] }
   >("admin:chatStats"),
-  surveyList: makeFunctionReference<"query", Record<string, never>, SurveyRow[]>(
+  surveyList: makeFunctionReference<"query", { token: string }, SurveyRow[]>(
     "admin:surveyList",
   ),
 };

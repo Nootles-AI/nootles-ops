@@ -4,18 +4,21 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { adminApi } from "@/lib/api";
 import { pctOf, usd, when } from "@/lib/format";
+import { useAdminToken } from "@/lib/session";
 import { RangeChips, useRange } from "./components/Range";
 
 export default function Overview() {
+  const token = useAdminToken();
   const { range, setRange, sinceMs } = useRange();
-  const calls = useQuery(adminApi.aiCallStats, { sinceMs });
-  const suggestions = useQuery(adminApi.suggestionStats, { sinceMs });
-  const chat = useQuery(adminApi.chatStats, { sinceMs });
+  const calls = useQuery(adminApi.aiCallStats, { token, sinceMs });
+  const suggestions = useQuery(adminApi.suggestionStats, { token, sinceMs });
+  const chat = useQuery(adminApi.chatStats, { token, sinceMs });
   const newFeedback = useQuery(adminApi.feedbackList, {
+    token,
     paginationOpts: { numItems: 100, cursor: null },
     status: "new",
   });
-  const surveys = useQuery(adminApi.surveyList, {});
+  const surveys = useQuery(adminApi.surveyList, { token });
 
   const cost = calls?.features.reduce((s, f) => s + f.costUsd, 0) ?? 0;
   const shown = suggestions?.kinds.reduce((s, k) => s + k.shown, 0) ?? 0;

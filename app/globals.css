@@ -140,6 +140,19 @@ body {
   background: var(--bad);
 }
 
+.ops-input {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: var(--text-ui);
+}
+.ops-input:focus {
+  outline: none;
+  border-color: var(--border-strong);
+}
+
 .ops-pre {
   background: var(--sunken);
   border: 1px solid var(--border);

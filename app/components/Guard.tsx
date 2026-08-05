@@ -1,30 +1,83 @@
 "use client";
 
-import { useConvexAuth, useQuery } from "convex/react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { adminApi } from "@/lib/api";
+import { useSession } from "@/lib/session";
 
 /**
- * Authorization, said plainly. Authentication is Clerk's (the middleware
- * already forced sign-in); this asks the deployment whether the signed-in
- * subject is the operator. Every admin query re-checks server-side — this
- * only decides what to render.
+ * The door. No token → the login form; a token → validated against the
+ * deployment before anything renders. Every admin function re-checks the
+ * token server-side — this only decides what to show.
  */
 export function Guard({ children }: { children: React.ReactNode }) {
-  const { isLoading, isAuthenticated } = useConvexAuth();
-  const me = useQuery(adminApi.me, isAuthenticated ? {} : "skip");
+  const { token, ready, clear } = useSession();
+  const valid = useQuery(adminApi.validate, token ? { token } : "skip");
 
-  if (isLoading || (isAuthenticated && me === undefined)) {
+  // An expired or revoked token is forgotten, not kept around to re-fail.
+  useEffect(() => {
+    if (token && valid === false) clear();
+  }, [token, valid, clear]);
+
+  if (!ready || (token && valid === undefined)) {
     return <p className="text-muted">Loading…</p>;
   }
-  if (!isAuthenticated || !me?.isAdmin) {
-    return (
-      <div className="ops-card mx-auto mt-24 max-w-sm p-6 text-center">
-        <p className="font-medium">This is the operator&rsquo;s dashboard.</p>
-        <p className="mt-1 text-[13px] text-muted">
-          You&rsquo;re signed in, but not as the operator of this deployment.
-        </p>
-      </div>
-    );
-  }
+  if (!token || valid === false) return <Login />;
   return <>{children}</>;
+}
+
+function Login() {
+  const { save } = useSession();
+  const login = useMutation(adminApi.login);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setFailed(false);
+    try {
+      save(await login({ username, password }));
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="ops-card mx-auto mt-24 max-w-xs space-y-3 p-6">
+      <p className="font-medium">Operator sign-in</p>
+      <input
+        className="ops-input"
+        placeholder="Username"
+        autoComplete="username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      />
+      <input
+        className="ops-input"
+        type="password"
+        placeholder="Password"
+        autoComplete="current-password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <button
+        type="submit"
+        disabled={busy || !username || !password}
+        className="ops-chip is-on w-full justify-center py-1.5 disabled:opacity-50"
+      >
+        {busy ? "Signing in…" : "Sign in"}
+      </button>
+      {failed && (
+        <p className="text-[12px]" style={{ color: "var(--bad)" }}>
+          Wrong username or password.
+        </p>
+      )}
+    </form>
+  );
 }

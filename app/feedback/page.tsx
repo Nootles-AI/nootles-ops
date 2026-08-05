@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { adminApi } from "@/lib/api";
 import { shortUser, when } from "@/lib/format";
+import { useAdminToken } from "@/lib/session";
 
 const KINDS = [
   { id: undefined, label: "All" },
@@ -24,7 +25,9 @@ export default function FeedbackInbox() {
   const [status, setStatus] = useState<"new" | "seen" | "done" | undefined>(
     undefined,
   );
+  const token = useAdminToken();
   const result = useQuery(adminApi.feedbackList, {
+    token,
     paginationOpts: { numItems: 200, cursor: null },
     ...(kind ? { kind } : {}),
     ...(status ? { status } : {}),
