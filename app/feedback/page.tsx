@@ -38,10 +38,50 @@ const RANK: Record<TicketPriority, number> = {
   low: 1,
 };
 
+const FILTERS_KEY = "nootles-ops:inbox-filters";
+
+type Filters = {
+  kind?: "issue" | "wish";
+  status?: TicketStatus;
+  sort: "newest" | "priority";
+};
+
+/** Stored filters, validated — stale or hand-edited values fall back cleanly. */
+function readFilters(): Filters | null {
+  try {
+    const raw = localStorage.getItem(FILTERS_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as Partial<Filters>;
+    return {
+      kind: p.kind === "issue" || p.kind === "wish" ? p.kind : undefined,
+      status: STATUSES.some((s) => s.id === p.status) ? p.status : undefined,
+      sort: p.sort === "priority" ? "priority" : "newest",
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function FeedbackInbox() {
   const [kind, setKind] = useState<"issue" | "wish" | undefined>(undefined);
   const [status, setStatus] = useState<TicketStatus | undefined>(undefined);
   const [sort, setSort] = useState<"newest" | "priority">("newest");
+
+  // Restore the persisted view on the client. The default renders first so
+  // SSR and the first client render agree; set-state-in-effect is correct here.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const saved = readFilters();
+    if (!saved) return;
+    setKind(saved.kind);
+    setStatus(saved.status);
+    setSort(saved.sort);
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    localStorage.setItem(FILTERS_KEY, JSON.stringify({ kind, status, sort }));
+  }, [kind, status, sort]);
   /** A right-clicked row's menu, in viewport coordinates. */
   const [menu, setMenu] = useState<{
     id: string;
