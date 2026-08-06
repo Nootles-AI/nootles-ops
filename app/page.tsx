@@ -13,6 +13,7 @@ export default function Overview() {
   const calls = useQuery(adminApi.aiCallStats, { token, sinceMs });
   const suggestions = useQuery(adminApi.suggestionStats, { token, sinceMs });
   const chat = useQuery(adminApi.chatStats, { token, sinceMs });
+  const users = useQuery(adminApi.userStats, { token, sinceMs });
   const newFeedback = useQuery(adminApi.feedbackList, {
     token,
     paginationOpts: { numItems: 100, cursor: null },
@@ -39,6 +40,30 @@ export default function Overview() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat
+          label="Users"
+          value={(users?.totalUsers ?? 0).toLocaleString()}
+          note={users ? `+${users.newUsers} new in range` : "…"}
+        />
+        <Stat
+          label="Active users"
+          value={(users?.activeUsers ?? 0).toLocaleString()}
+          note={
+            users?.totalUsers
+              ? `${Math.round((users.activeUsers / users.totalUsers) * 100)}% of everyone`
+              : "…"
+          }
+        />
+        <Stat
+          label="Pages created"
+          value={(users?.pagesCreated ?? 0).toLocaleString()}
+          note="in range"
+        />
+        <Stat
+          label="Reports filed"
+          value={(users?.reports ?? 0).toLocaleString()}
+          note="in range"
+        />
         <Stat
           label="Model spend"
           value={usd(cost)}
@@ -107,7 +132,24 @@ export default function Overview() {
         )}
       </section>
 
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-3">
+        <section className="ops-card p-4">
+          <h2 className="ops-meta">Who they are</h2>
+          {users?.roles.length ? (
+            <ul className="mt-2 space-y-1 text-[13px]">
+              {users.roles.map((r) => (
+                <li key={r.role} className="flex justify-between">
+                  <span className="truncate">{r.role}</span>
+                  <span className="ml-3 shrink-0 text-muted">{r.count}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-[13px] text-muted">
+              No accounts yet — the survey&rsquo;s role answers land here.
+            </p>
+          )}
+        </section>
         <section className="ops-card p-4">
           <h2 className="ops-meta">PMF · &ldquo;how disappointed?&rdquo;</h2>
           {pmf.length === 0 ? (

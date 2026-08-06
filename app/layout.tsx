@@ -37,6 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <nav className="flex items-center gap-1">
                   <NavLink href="/">Overview</NavLink>
                   <FeedbackLink />
+                  <NavLink href="/users">Users</NavLink>
                   <NavLink href="/suggestions">Suggestions</NavLink>
                   <NavLink href="/calls">AI calls</NavLink>
                 </nav>

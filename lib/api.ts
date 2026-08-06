@@ -140,6 +140,46 @@ export type SurveyRow = {
   createdAt: number;
 };
 
+export type UserRow = {
+  ownerId: string;
+  email: string | null;
+  role: string | null;
+  useCase: string | null;
+  status: "surveying" | "touring" | "done" | "skipped";
+  createdAt: number;
+  letterSeen: boolean;
+  lastActiveAt: number | null;
+};
+
+export type UserDetail = {
+  profile: {
+    ownerId: string;
+    email: string | null;
+    role: string | null;
+    useCase: string | null;
+    status: string;
+    createdAt: number;
+    hints: string[];
+    letterSeen: boolean;
+    hasSeed: boolean;
+  };
+  tutorial: { edited: boolean; aiRows: number } | null;
+  projects: { id: string; title: string; createdAt: number; shared: boolean }[];
+  pageCount: number;
+  suggestionKinds: { kind: string; shown: number; accepted: number }[];
+  suggestionsSampled: number;
+  firstAcceptedAt: number | null;
+  features: { feature: string; calls: number; costUsd: number }[];
+  lastActiveAt: number | null;
+  reports: {
+    id: string;
+    kind: "issue" | "wish";
+    text: string;
+    status: TicketStatus;
+    createdAt: number;
+  }[];
+};
+
 type Page<T> = { page: T[]; isDone: boolean; continueCursor: string };
 type PaginationOpts = { numItems: number; cursor: string | null };
 
@@ -219,6 +259,27 @@ export const adminApi = {
     { token: string; limit?: number },
     AiCallRow[]
   >("admin:aiCallRecent"),
+  userStats: makeFunctionReference<
+    "query",
+    { token: string; sinceMs: number },
+    {
+      totalUsers: number;
+      totalCapped: boolean;
+      newUsers: number;
+      activeUsers: number;
+      pagesCreated: number;
+      reports: number;
+      roles: { role: string; count: number }[];
+    }
+  >("admin:userStats"),
+  userList: makeFunctionReference<"query", { token: string }, UserRow[]>(
+    "admin:userList",
+  ),
+  userDetail: makeFunctionReference<
+    "query",
+    { token: string; ownerId: string },
+    UserDetail | null
+  >("admin:userDetail"),
   chatStats: makeFunctionReference<
     "query",
     { token: string; sinceMs: number },
