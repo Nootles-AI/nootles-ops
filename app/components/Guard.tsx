@@ -40,7 +40,9 @@ function Login() {
     setBusy(true);
     setFailed(false);
     try {
-      save(await login({ username, password }));
+      // Trimmed: phone keyboards capitalize and pastes drag whitespace, and
+      // a login that fails on an invisible character reads as broken.
+      save(await login({ username: username.trim(), password: password.trim() }));
     } catch {
       setFailed(true);
     } finally {
@@ -55,6 +57,9 @@ function Login() {
         className="ops-input"
         placeholder="Username"
         autoComplete="username"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         value={username}
         onChange={(e) => setUsername(e.target.value)}
       />
