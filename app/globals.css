@@ -213,6 +213,82 @@ body {
   white-space: nowrap;
 }
 
+/* The ticket's name in a list. Tabular so a column of them lines up. */
+.ops-ticket-id {
+  flex-shrink: 0;
+  width: 3.75rem;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: var(--text-meta);
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+/* A ticket the agent will never be handed. Visible in the list on purpose —
+   an invisible mute is one you forget you set. */
+.ops-ticket-omitted {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px dashed var(--border-strong);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+/* The concreteness score, where one has been written. */
+.ops-ticket-score {
+  flex-shrink: 0;
+  min-width: 1.75rem;
+  text-align: right;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* Who applied an op, in the report's timeline. */
+.ops-op-source {
+  flex-shrink: 0;
+  width: 4.5rem;
+  color: var(--faint);
+}
+.ops-op-source.is-ai {
+  color: var(--warn);
+}
+
+/* Marks a pull request the agent opened, not a person. */
+.ops-agent-badge {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--sunken);
+  border: 1px solid var(--border);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+/* The same name where it is the page's subject, and copyable. */
+.ops-ticket-name {
+  padding: 1px 7px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: var(--text-meta);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-meta);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ops-ticket-name:hover {
+  border-color: var(--border-strong);
+  color: var(--foreground);
+}
+
 /* ---- Context menu ---- */
 .ops-menu {
   position: fixed;

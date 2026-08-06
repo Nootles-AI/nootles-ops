@@ -57,6 +57,21 @@ export function StatusIcon({ status }: { status: TicketStatus }) {
           <path d="M7 3.75 A3.25 3.25 0 0 1 7 10.25 Z" fill="var(--warn)" />
         </svg>
       );
+    // A PR exists but nobody has merged it: the ring closes, the centre waits.
+    case "pr_filed":
+      return (
+        <svg {...common}>
+          <circle
+            cx="7"
+            cy="7"
+            r="5.25"
+            fill="none"
+            stroke="var(--ok)"
+            strokeWidth="1.5"
+          />
+          <circle cx="7" cy="7" r="2.25" fill="var(--ok)" />
+        </svg>
+      );
     case "done":
       return (
         <svg {...common}>

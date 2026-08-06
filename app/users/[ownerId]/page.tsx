@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { adminApi } from "@/lib/api";
-import { pctOf, shortUser, usd, when } from "@/lib/format";
+import { pctOf, shortUser, ticketName, usd, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { StatusIcon } from "../../components/StatusIcon";
 
@@ -179,10 +179,11 @@ export default function UserDetail() {
             {detail.reports.map((r) => (
               <li key={r.id}>
                 <Link
-                  href={`/feedback/${r.id}`}
+                  href={`/feedback/${ticketName(r.number)}`}
                   className="flex items-center gap-2 hover:underline"
                 >
                   <StatusIcon status={r.status} />
+                  <span className="ops-ticket-id">{ticketName(r.number)}</span>
                   <span className="ops-meta shrink-0">
                     {r.kind === "issue" ? "bug" : "wish"}
                   </span>

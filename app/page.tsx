@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { adminApi } from "@/lib/api";
-import { pctOf, usd, when } from "@/lib/format";
+import { pctOf, ticketName, usd, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { RangeChips, useRange } from "./components/Range";
 
@@ -112,7 +112,7 @@ export default function Overview() {
             {newFeedback.page.slice(0, 6).map((f) => (
               <li key={f._id} className="border-b border-border last:border-none">
                 <Link
-                  href={`/feedback/${f._id}`}
+                  href={`/feedback/${ticketName(f.number)}`}
                   className="flex items-baseline gap-3 px-4 py-2.5 hover:bg-sunken"
                 >
                   <span className="ops-dot is-new shrink-0 self-center" />

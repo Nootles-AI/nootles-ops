@@ -10,7 +10,7 @@ import {
   type TicketPriority,
   type TicketStatus,
 } from "@/lib/api";
-import { when } from "@/lib/format";
+import { ticketName, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { PriorityIcon } from "../components/PriorityIcon";
 import { StatusIcon } from "../components/StatusIcon";
@@ -27,6 +27,7 @@ const STATUSES: { id: TicketStatus | undefined; label: string }[] = [
   { id: "new", label: "New" },
   { id: "seen", label: "Seen" },
   { id: "in_progress", label: "In progress" },
+  { id: "pr_filed", label: "PR filed" },
   { id: "done", label: "Done" },
   { id: "declined", label: "Declined" },
 ];
@@ -100,6 +101,7 @@ export default function FeedbackInbox() {
     status: TicketStatus;
     kind: "issue" | "wish";
     priority?: TicketPriority;
+    agentSkip?: boolean;
     x: number;
     y: number;
   } | null>(null);
@@ -107,6 +109,7 @@ export default function FeedbackInbox() {
   const setTicketStatus = useMutation(adminApi.feedbackSetStatus);
   const setTicketPriority = useMutation(adminApi.feedbackSetPriority);
   const setTicketKind = useMutation(adminApi.feedbackSetKind);
+  const setTicketAgentSkip = useMutation(adminApi.feedbackSetAgentSkip);
   const result = useQuery(adminApi.feedbackList, {
     token,
     paginationOpts: { numItems: 200, cursor: null },
@@ -152,6 +155,11 @@ export default function FeedbackInbox() {
   const actKind = (to: "issue" | "wish") => {
     if (!menu) return;
     void setTicketKind({ token, id: menu.id, kind: to }).catch(() => {});
+    setMenu(null);
+  };
+  const actAgentSkip = (skip: boolean) => {
+    if (!menu) return;
+    void setTicketAgentSkip({ token, id: menu.id, skip }).catch(() => {});
     setMenu(null);
   };
 
@@ -232,7 +240,7 @@ export default function FeedbackInbox() {
               return (
                 <li key={f._id} className="border-b border-border last:border-none">
                   <Link
-                    href={`/feedback/${f._id}`}
+                    href={`/feedback/${ticketName(f.number)}`}
                     className={`ops-ticket${unread ? " is-unread" : ""}`}
                     onContextMenu={(e) => {
                       e.preventDefault();
@@ -241,6 +249,7 @@ export default function FeedbackInbox() {
                         status: f.status,
                         kind: f.kind,
                         priority: f.priority,
+                        agentSkip: f.agentSkip,
                         x: e.clientX,
                         y: e.clientY,
                       });
@@ -251,10 +260,24 @@ export default function FeedbackInbox() {
                     </span>
                     <PriorityIcon priority={f.priority} />
                     <StatusIcon status={f.status} />
+                    <span className="ops-ticket-id">{ticketName(f.number)}</span>
                     <span className="ops-meta w-9 shrink-0">
                       {f.kind === "issue" ? "bug" : "wish"}
                     </span>
                     <span className="ops-ticket-title">{f.text}</span>
+                    {f.agentSkip && (
+                      <span
+                        className="ops-ticket-omitted"
+                        title="Omitted from agent review"
+                      >
+                        omitted
+                      </span>
+                    )}
+                    {f.triageScore !== undefined && (
+                      <span className="ops-ticket-score" title="Concreteness">
+                        {f.triageScore}
+                      </span>
+                    )}
                     {f.category && f.category !== "general" && (
                       <span className="ops-ticket-cat">
                         {CATEGORY_LABELS[f.category]}
@@ -347,6 +370,15 @@ export default function FeedbackInbox() {
           >
             <span className="ops-meta">{menu.kind === "issue" ? "wish" : "bug"}</span>
             Move to {menu.kind === "issue" ? "feature requests" : "bug reports"}
+          </button>
+          <div className="ops-menu-sep" aria-hidden />
+          <button
+            className="ops-menu-item"
+            role="menuitem"
+            onClick={() => actAgentSkip(!menu.agentSkip)}
+          >
+            <span className="ops-meta">{menu.agentSkip ? "allow" : "omit"}</span>
+            {menu.agentSkip ? "Allow agent review" : "Omit from agent review"}
           </button>
         </div>
       )}
