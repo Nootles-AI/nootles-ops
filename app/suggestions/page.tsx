@@ -2,9 +2,10 @@
 
 import { useQuery } from "convex/react";
 import { adminApi } from "@/lib/api";
-import { ms, pctOf, shortUser, when } from "@/lib/format";
+import { ms, pctOf, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { RangeChips, useRange } from "../components/Range";
+import { Who } from "../components/Who";
 
 export default function Suggestions() {
   const token = useAdminToken();
@@ -120,8 +121,8 @@ export default function Suggestions() {
                       ? `${Math.round(r.survivalScore * 100)}%`
                       : "–"}
                 </td>
-                <td className="whitespace-nowrap font-mono text-[12px] text-muted">
-                  {shortUser(r.ownerId)}
+                <td className="whitespace-nowrap">
+                  <Who ownerId={r.ownerId} />
                 </td>
                 <td className="num text-[12px] text-muted">{when(r.createdAt)}</td>
               </tr>

@@ -2,9 +2,10 @@
 
 import { useQuery } from "convex/react";
 import { adminApi } from "@/lib/api";
-import { ms, shortUser, usd, when } from "@/lib/format";
+import { ms, usd, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { RangeChips, useRange } from "../components/Range";
+import { Who } from "../components/Who";
 
 export default function Calls() {
   const token = useAdminToken();
@@ -95,7 +96,7 @@ export default function Calls() {
                   key={s.ownerId}
                   className="flex justify-between text-[12px]"
                 >
-                  <span className="font-mono text-muted">{shortUser(s.ownerId)}</span>
+                  <Who ownerId={s.ownerId} />
                   <span className="tabular-nums">{usd(s.costUsd)}</span>
                 </li>
               ))}
@@ -146,8 +147,8 @@ export default function Calls() {
                 <td className="num">{r.ttfbMs !== undefined ? ms(r.ttfbMs) : "–"}</td>
                 <td className="num">{ms(r.latencyMs)}</td>
                 <td className="num">{r.costUsd !== undefined ? usd(r.costUsd) : "–"}</td>
-                <td className="whitespace-nowrap font-mono text-[12px] text-muted">
-                  {shortUser(r.ownerId)}
+                <td className="whitespace-nowrap">
+                  <Who ownerId={r.ownerId} />
                 </td>
                 <td className="num text-[12px] text-muted">{when(r.createdAt)}</td>
               </tr>

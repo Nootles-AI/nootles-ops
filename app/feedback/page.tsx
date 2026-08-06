@@ -10,10 +10,11 @@ import {
   type TicketPriority,
   type TicketStatus,
 } from "@/lib/api";
-import { shortUser, when } from "@/lib/format";
+import { when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { PriorityIcon } from "../components/PriorityIcon";
 import { StatusIcon } from "../components/StatusIcon";
+import { Who } from "../components/Who";
 
 const KINDS = [
   { id: undefined, label: "All" },
@@ -268,8 +269,8 @@ export default function FeedbackInbox() {
                         .filter(Boolean)
                         .join(" · ")}
                     </span>
-                    <span className="max-w-40 shrink-0 truncate text-right font-mono text-[11px] text-faint">
-                      {f.email ?? shortUser(f.ownerId)}
+                    <span className="max-w-44 shrink-0">
+                      <Who ownerId={f.ownerId} />
                     </span>
                     <span className="w-14 shrink-0 text-right text-[12px] text-faint">
                       {when(f.createdAt)}

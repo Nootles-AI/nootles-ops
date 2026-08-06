@@ -35,9 +35,16 @@ export default function UserDetail() {
         <Link href="/users" className="text-[13px] text-muted hover:text-foreground">
           ← Users
         </Link>
+        {profile.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={profile.imageUrl} alt="" className="ops-who-face is-lg" />
+        )}
         <h1 className="text-lg font-semibold tracking-tight">
-          {profile.email ?? shortUser(profile.ownerId)}
+          {profile.name ?? profile.email ?? shortUser(profile.ownerId)}
         </h1>
+        {profile.name && profile.email && (
+          <span className="text-[13px] text-muted">{profile.email}</span>
+        )}
         {profile.email && (
           <a href={`mailto:${profile.email}`} className="ops-chip">
             Write to them ✉

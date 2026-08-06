@@ -41,9 +41,20 @@ export default function Users() {
                   <td>
                     <Link
                       href={`/users/${u.ownerId}`}
-                      className="block max-w-56 truncate font-medium hover:underline"
+                      className="ops-who max-w-64 font-medium hover:underline"
+                      title={u.email ?? u.ownerId}
                     >
-                      {u.email ?? shortUser(u.ownerId)}
+                      {u.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={u.imageUrl} alt="" className="ops-who-face" />
+                      ) : (
+                        <span className="ops-who-face ops-who-blank" aria-hidden>
+                          {(u.name ?? u.email ?? "?")[0]?.toUpperCase()}
+                        </span>
+                      )}
+                      <span className="ops-who-name">
+                        {u.name ?? u.email ?? shortUser(u.ownerId)}
+                      </span>
                     </Link>
                   </td>
                   <td className="max-w-40 truncate text-muted">{u.role ?? "–"}</td>

@@ -4,6 +4,7 @@ import "./globals.css";
 import { SessionProvider } from "@/lib/session";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import { FeedbackLink } from "./components/FeedbackLink";
+import { DirectoryProvider } from "./components/Who";
 import { Guard } from "./components/Guard";
 import { NavLink } from "./components/NavLink";
 import { SignOut } from "./components/SignOut";
@@ -47,7 +48,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </div>
             </header>
             <main className="mx-auto max-w-6xl px-6 py-8">
-              <Guard>{children}</Guard>
+              <Guard>
+                <DirectoryProvider>{children}</DirectoryProvider>
+              </Guard>
             </main>
           </SessionProvider>
         </ConvexClientProvider>

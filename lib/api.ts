@@ -143,6 +143,8 @@ export type SurveyRow = {
 export type UserRow = {
   ownerId: string;
   email: string | null;
+  name: string | null;
+  imageUrl: string | null;
   role: string | null;
   useCase: string | null;
   status: "surveying" | "touring" | "done" | "skipped";
@@ -155,6 +157,8 @@ export type UserDetail = {
   profile: {
     ownerId: string;
     email: string | null;
+    name: string | null;
+    imageUrl: string | null;
     role: string | null;
     useCase: string | null;
     status: string;
