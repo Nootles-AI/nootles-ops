@@ -11,15 +11,17 @@ import {
   type TicketPriority,
   type TicketStatus,
 } from "@/lib/api";
-import { when } from "@/lib/format";
+import { ticketName, ticketNumber, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { PriorityIcon } from "../../components/PriorityIcon";
 import { StatusIcon } from "../../components/StatusIcon";
+import { TicketName } from "../../components/TicketName";
 
 const STATUSES: { id: TicketStatus; label: string }[] = [
   { id: "new", label: "New" },
   { id: "seen", label: "Seen" },
   { id: "in_progress", label: "In progress" },
+  { id: "pr_filed", label: "PR filed" },
   { id: "done", label: "Done" },
   { id: "declined", label: "Declined" },
 ];
@@ -33,13 +35,21 @@ const PRIORITIES: { id: TicketPriority | undefined; label: string }[] = [
 ];
 
 export default function FeedbackDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { ticket } = useParams<{ ticket: string }>();
   const token = useAdminToken();
-  const row = useQuery(adminApi.feedbackGet, { token, id });
+  // Routes carry the ticket's name, not its Convex id — `/feedback/NT-42` is
+  // what the inbox links to and what anyone would paste.
+  const number = ticketNumber(ticket);
+  const row = useQuery(
+    adminApi.feedbackByNumber,
+    number === null ? "skip" : { token, number },
+  );
   const setStatus = useMutation(adminApi.feedbackSetStatus);
   const setPriority = useMutation(adminApi.feedbackSetPriority);
   const setKind = useMutation(adminApi.feedbackSetKind);
   const setCategory = useMutation(adminApi.feedbackSetCategory);
+  const setAgentSkip = useMutation(adminApi.feedbackSetAgentSkip);
+  const setDuplicate = useMutation(adminApi.feedbackSetDuplicate);
 
   // Opening a ticket is what "seen" means — nobody should file that by hand.
   useEffect(() => {
@@ -48,8 +58,9 @@ export default function FeedbackDetail() {
     }
   }, [row?.status, row?._id, token, setStatus]);
 
-  if (row === undefined) return <p className="text-muted">Loading…</p>;
-  if (row === null)
+  // An unparseable segment and a number nobody filed answer the same way, and
+  // both must be answered before `undefined` can be read as "still loading".
+  if (number === null || row === null)
     return (
       <p className="text-muted">
         This report doesn&rsquo;t exist.{" "}
@@ -59,6 +70,7 @@ export default function FeedbackDetail() {
         .
       </p>
     );
+  if (row === undefined) return <p className="text-muted">Loading…</p>;
 
   return (
     <div className="space-y-5">
@@ -66,6 +78,7 @@ export default function FeedbackDetail() {
         <Link href="/feedback" className="text-[13px] text-muted hover:text-foreground">
           ← Inbox
         </Link>
+        <TicketName number={row.number} />
         <span className="ops-meta">{row.kind === "issue" ? "bug report" : "feature request"}</span>
         <span className="text-[12px] text-faint">{when(row.createdAt)}</span>
         <div className="ml-auto flex gap-1.5">
@@ -135,7 +148,86 @@ export default function FeedbackDetail() {
         >
           Move to {row.kind === "issue" ? "feature requests" : "bug reports"}
         </button>
+        <span className="mx-1 h-4 w-px self-center bg-border" aria-hidden />
+        <button
+          className={`ops-chip${row.agentSkip ? " is-on" : ""}`}
+          title="The agent's queues never return an omitted ticket"
+          onClick={() =>
+            void setAgentSkip({ token, id: row._id, skip: !row.agentSkip })
+          }
+        >
+          {row.agentSkip ? "Omitted from agent review" : "Omit from agent review"}
+        </button>
       </div>
+
+      {(row.duplicateOfNumber !== null || row.duplicateNumbers.length > 0) && (
+        <div className="flex flex-wrap items-center gap-2 text-[13px]">
+          {row.duplicateOfNumber !== null && (
+            <>
+              <span className="ops-meta">Duplicate of</span>
+              <Link
+                href={`/feedback/${ticketName(row.duplicateOfNumber)}`}
+                className="ops-chip"
+              >
+                {ticketName(row.duplicateOfNumber)} →
+              </Link>
+              <button
+                className="ops-chip"
+                onClick={() =>
+                  void setDuplicate({ token, id: row._id, duplicateOf: null })
+                }
+              >
+                Not a duplicate
+              </button>
+            </>
+          )}
+          {row.duplicateNumbers.length > 0 && (
+            <>
+              <span className="ops-meta">Repeated by</span>
+              {row.duplicateNumbers.map((n) => (
+                <Link
+                  key={n}
+                  href={`/feedback/${ticketName(n)}`}
+                  className="ops-chip"
+                >
+                  {ticketName(n)}
+                </Link>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+
+      {row.prs.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="ops-meta">Pull requests</span>
+          {row.prs.map((pr) => (
+            <a
+              key={pr._id}
+              href={pr.url}
+              target="_blank"
+              rel="noreferrer"
+              className={`ops-chip${pr.state === "merged" ? " is-on" : ""}`}
+              title={pr.title}
+            >
+              {pr.repo.split("/")[1]} #{pr.prNumber} · {pr.state}
+              {pr.agentFiled && <span className="ops-agent-badge">agent</span>}
+            </a>
+          ))}
+        </div>
+      )}
+
+      {row.triagedAt !== undefined && (
+        <section className="ops-card p-4">
+          <h2 className="ops-meta">
+            Agent triage · score {row.triageScore ?? "–"}
+            {row.rubricVersion ? ` · rubric ${row.rubricVersion}` : ""}
+          </h2>
+          <p className="mt-2 max-w-prose whitespace-pre-wrap text-[13px] text-muted">
+            {row.triageNotes || "(no notes)"}
+          </p>
+        </section>
+      )}
 
       <section className="ops-card p-4">
         <p className="max-w-prose whitespace-pre-wrap text-[14px] leading-relaxed">
@@ -187,11 +279,7 @@ export default function FeedbackDetail() {
         </section>
         <section>
           <h2 className="ops-meta mb-2">Recent ops</h2>
-          <pre className="ops-pre">
-            {row.recentOps?.length
-              ? JSON.stringify(row.recentOps, null, 2)
-              : "(none recorded)"}
-          </pre>
+          <OpTimeline ops={row.recentOps} />
         </section>
       </div>
 
@@ -199,5 +287,46 @@ export default function FeedbackDetail() {
         Reported from {row.env.ua}
       </p>
     </div>
+  );
+}
+
+/**
+ * What the reporter had just done, human and AI interleaved.
+ *
+ * Tickets filed before the ops ring was split carry bare op objects with no
+ * source, so those are shown as they always were — raw JSON. There is no
+ * migration to run: the field is untyped, and old reports are read, not fixed.
+ */
+function OpTimeline({ ops }: { ops?: unknown[] }) {
+  if (!ops?.length) return <pre className="ops-pre">(none recorded)</pre>;
+
+  const tagged = ops.filter(
+    (o): o is { source: "human" | "ai"; feature?: string; op: unknown; at: number } =>
+      typeof o === "object" &&
+      o !== null &&
+      "source" in o &&
+      "at" in o,
+  );
+  if (tagged.length !== ops.length) {
+    return <pre className="ops-pre">{JSON.stringify(ops, null, 2)}</pre>;
+  }
+
+  return (
+    <ol className="ops-pre space-y-1">
+      {tagged.map((entry, i) => (
+        <li key={i} className="flex gap-2">
+          <span
+            className={`ops-op-source${entry.source === "ai" ? " is-ai" : ""}`}
+          >
+            {entry.source === "ai" ? (entry.feature ?? "ai") : "you"}
+          </span>
+          <span className="min-w-0 flex-1 break-all">
+            {typeof entry.op === "object" && entry.op !== null
+              ? JSON.stringify(entry.op)
+              : String(entry.op)}
+          </span>
+        </li>
+      ))}
+    </ol>
   );
 }

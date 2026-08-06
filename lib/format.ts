@@ -31,3 +31,22 @@ export function pctOf(part: number, whole: number): string {
 export function shortUser(id: string): string {
   return id.replace(/^user_/, "").slice(0, 8);
 }
+
+/**
+ * A ticket's name. The one spelling of it — the dashboard's URLs, the copy
+ * button, and the PR title convention (`NT-42_what_was_fixed`) are all this
+ * string, so a PR can name the ticket it fixes and be found again.
+ */
+export function ticketName(number: number): string {
+  return `NT-${number}`;
+}
+
+/**
+ * The number out of a `NT-42` route segment, or null. Lenient about case and a
+ * trailing slug so a pasted PR branch name resolves too; strict about the rest,
+ * since a wrong ticket is worse than a 404.
+ */
+export function ticketNumber(segment: string): number | null {
+  const match = /^NT-(\d+)(?:_|$)/i.exec(decodeURIComponent(segment));
+  return match ? Number(match[1]) : null;
+}

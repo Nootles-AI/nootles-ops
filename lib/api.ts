@@ -7,7 +7,13 @@ import { makeFunctionReference } from "convex/server";
  * dashboard breaking loudly on a mismatch is the behavior we want.
  */
 
-export type TicketStatus = "new" | "seen" | "in_progress" | "done" | "declined";
+export type TicketStatus =
+  | "new"
+  | "seen"
+  | "in_progress"
+  | "pr_filed"
+  | "done"
+  | "declined";
 
 export type TicketPriority = "urgent" | "high" | "medium" | "low";
 
@@ -39,6 +45,8 @@ export const CATEGORY_LABELS: Record<TicketCategory, string> = {
 export type FeedbackRow = {
   _id: string;
   _creationTime: number;
+  /** The ticket's name is `NT-{number}` — see `ticketName` in lib/format. */
+  number: number;
   ownerId: string;
   kind: "issue" | "wish";
   text: string;
@@ -54,7 +62,59 @@ export type FeedbackRow = {
   priority?: TicketPriority;
   category?: TicketCategory;
   email?: string;
+  /** Set = this repeats another ticket, and is hidden from the inbox. */
+  duplicateOf?: string;
+  duplicateSetBy?: "agent" | "human";
+  /** Set = kept away from the agent; the queues never return it. */
+  agentSkip?: boolean;
+  triageScore?: number;
+  triageNotes?: string;
+  triagedAt?: number;
+  rubricVersion?: string;
+  agentAttemptedAt?: number;
+  agentOutcome?: "filed" | "failed" | "declined";
   createdAt: number;
+};
+
+export type TicketPr = {
+  _id: string;
+  repo: string;
+  prNumber: number;
+  title: string;
+  url: string;
+  state: "open" | "closed" | "merged";
+  mergedAt?: number;
+  agentFiled: boolean;
+  firstSeenAt: number;
+};
+
+/** What the detail page gets: the ticket, its PRs, and its duplicate links. */
+export type FeedbackDetail = FeedbackRow & {
+  prs: TicketPr[];
+  duplicateOfNumber: number | null;
+  duplicateNumbers: number[];
+};
+
+export type AgentRun = {
+  _id: string;
+  kind: "triage" | "implement";
+  startedAt: number;
+  finishedAt?: number;
+  status: "running" | "ok" | "failed";
+  ticketsRead: number;
+  duplicatesLinked: number;
+  scored: number;
+  prsFiled: number;
+  errors: string[];
+  notes?: string;
+};
+
+export type OpsConfig = {
+  agentEnabled: boolean;
+  implementEnabled: boolean;
+  maxPerRun: number;
+  coolingHours: number;
+  scoreThreshold: number;
 };
 
 export type SuggestionRow = {
@@ -177,6 +237,7 @@ export type UserDetail = {
   lastActiveAt: number | null;
   reports: {
     id: string;
+    number: number;
     kind: "issue" | "wish";
     text: string;
     status: TicketStatus;
@@ -206,6 +267,7 @@ export const adminApi = {
       paginationOpts: PaginationOpts;
       kind?: "issue" | "wish";
       status?: TicketStatus;
+      includeDuplicates?: boolean;
     },
     Page<FeedbackRow>
   >("admin:feedbackList"),
@@ -215,8 +277,38 @@ export const adminApi = {
   feedbackGet: makeFunctionReference<
     "query",
     { token: string; id: string },
-    FeedbackRow | null
+    FeedbackDetail | null
   >("admin:feedbackGet"),
+  feedbackByNumber: makeFunctionReference<
+    "query",
+    { token: string; number: number },
+    FeedbackDetail | null
+  >("admin:feedbackByNumber"),
+  feedbackSetDuplicate: makeFunctionReference<
+    "mutation",
+    { token: string; id: string; duplicateOf: string | null },
+    null
+  >("admin:feedbackSetDuplicate"),
+  feedbackSetAgentSkip: makeFunctionReference<
+    "mutation",
+    { token: string; id: string; skip: boolean },
+    null
+  >("admin:feedbackSetAgentSkip"),
+  opsConfigGet: makeFunctionReference<
+    "query",
+    { token: string },
+    OpsConfig & { configured: boolean }
+  >("admin:opsConfigGet"),
+  opsConfigSet: makeFunctionReference<
+    "mutation",
+    { token: string } & OpsConfig,
+    null
+  >("admin:opsConfigSet"),
+  runList: makeFunctionReference<
+    "query",
+    { token: string; limit?: number },
+    AgentRun[]
+  >("admin:runList"),
   feedbackSetStatus: makeFunctionReference<
     "mutation",
     { token: string; id: string; status: TicketStatus },

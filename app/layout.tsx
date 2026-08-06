@@ -41,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                   <NavLink href="/users">Users</NavLink>
                   <NavLink href="/suggestions">Suggestions</NavLink>
                   <NavLink href="/calls">AI calls</NavLink>
+                  <NavLink href="/agent">Agent</NavLink>
                 </nav>
                 <div className="ml-auto">
                   <SignOut />
