@@ -76,13 +76,18 @@ export type FeedbackRow = {
   createdAt: number;
 };
 
+/** A ticket in the inbox, which also knows whether any PR names it. */
+export type FeedbackListRow = FeedbackRow & { prStates: PrState[] };
+
+export type PrState = "draft" | "open" | "closed" | "merged";
+
 export type TicketPr = {
   _id: string;
   repo: string;
   prNumber: number;
   title: string;
   url: string;
-  state: "open" | "closed" | "merged";
+  state: PrState;
   mergedAt?: number;
   agentFiled: boolean;
   firstSeenAt: number;
@@ -269,7 +274,7 @@ export const adminApi = {
       status?: TicketStatus;
       includeDuplicates?: boolean;
     },
-    Page<FeedbackRow>
+    Page<FeedbackListRow>
   >("admin:feedbackList"),
   feedbackNewCount: makeFunctionReference<"query", { token: string }, number>(
     "admin:feedbackNewCount",

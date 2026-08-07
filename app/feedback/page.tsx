@@ -6,12 +6,14 @@ import { useMutation, useQuery } from "convex/react";
 import {
   adminApi,
   CATEGORY_LABELS,
+  type PrState,
   type TicketCategory,
   type TicketPriority,
   type TicketStatus,
 } from "@/lib/api";
 import { ticketName, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
+import { PrIcon } from "../components/PrIcon";
 import { PriorityIcon } from "../components/PriorityIcon";
 import { StatusIcon } from "../components/StatusIcon";
 import { Who } from "../components/Who";
@@ -47,6 +49,16 @@ const RANK: Record<TicketPriority, number> = {
 };
 
 const FILTERS_KEY = "nootles-ops:inbox-filters";
+
+/**
+ * Which of a ticket's pull requests speaks for it in a one-icon column: the
+ * furthest one along, so a merged PR beside an abandoned one reads as merged.
+ */
+const PR_RANK: PrState[] = ["merged", "open", "draft", "closed"];
+
+function leadPr(states: PrState[]): PrState | null {
+  return PR_RANK.find((s) => states.includes(s)) ?? null;
+}
 
 type Filters = {
   kind?: "issue" | "wish";
@@ -265,6 +277,16 @@ export default function FeedbackInbox() {
                       {f.kind === "issue" ? "bug" : "wish"}
                     </span>
                     <span className="ops-ticket-title">{f.text}</span>
+                    {leadPr(f.prStates) && (
+                      <span className="inline-flex items-center gap-1">
+                        <PrIcon state={leadPr(f.prStates)!} />
+                        {f.prStates.length > 1 && (
+                          <span className="ops-ticket-prcount">
+                            {f.prStates.length}
+                          </span>
+                        )}
+                      </span>
+                    )}
                     {f.agentSkip && (
                       <span
                         className="ops-ticket-omitted"

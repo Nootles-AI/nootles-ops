@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import { ticketName, ticketNumber, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
+import { PrIcon } from "../../components/PrIcon";
 import { PriorityIcon } from "../../components/PriorityIcon";
 import { StatusIcon } from "../../components/StatusIcon";
 import { TicketName } from "../../components/TicketName";
@@ -199,22 +200,37 @@ export default function FeedbackDetail() {
       )}
 
       {row.prs.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="ops-meta">Pull requests</span>
-          {row.prs.map((pr) => (
-            <a
-              key={pr._id}
-              href={pr.url}
-              target="_blank"
-              rel="noreferrer"
-              className={`ops-chip${pr.state === "merged" ? " is-on" : ""}`}
-              title={pr.title}
-            >
-              {pr.repo.split("/")[1]} #{pr.prNumber} · {pr.state}
-              {pr.agentFiled && <span className="ops-agent-badge">agent</span>}
-            </a>
-          ))}
-        </div>
+        <section className="ops-card">
+          <header className="border-b border-border px-4 py-2.5">
+            <h2 className="ops-meta">
+              Pull requests · {row.prs.length}
+            </h2>
+          </header>
+          <ul>
+            {row.prs.map((pr) => (
+              <li key={pr._id} className="border-b border-border last:border-none">
+                <a
+                  href={pr.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ops-pr-row"
+                >
+                  <PrIcon state={pr.state} />
+                  <span className="ops-pr-title">{pr.title}</span>
+                  {pr.agentFiled && <span className="ops-agent-badge">agent</span>}
+                  <span className="ops-pr-repo">
+                    {pr.repo.split("/")[1]}
+                    <span className="ops-pr-num">#{pr.prNumber}</span>
+                  </span>
+                  <span className={`ops-pr-state is-${pr.state}`}>{pr.state}</span>
+                  <span className="ops-pr-when">
+                    {when(pr.mergedAt ?? pr.firstSeenAt)}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {row.triagedAt !== undefined && (
