@@ -51,6 +51,7 @@ export default function FeedbackDetail() {
   const setCategory = useMutation(adminApi.feedbackSetCategory);
   const setAgentSkip = useMutation(adminApi.feedbackSetAgentSkip);
   const setDuplicate = useMutation(adminApi.feedbackSetDuplicate);
+  const clearTriage = useMutation(adminApi.feedbackClearTriage);
 
   // Opening a ticket is what "seen" means — nobody should file that by hand.
   useEffect(() => {
@@ -235,10 +236,20 @@ export default function FeedbackDetail() {
 
       {row.triagedAt !== undefined && (
         <section className="ops-card p-4">
-          <h2 className="ops-meta">
-            Agent triage · score {row.triageScore ?? "–"}
-            {row.rubricVersion ? ` · rubric ${row.rubricVersion}` : ""}
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="ops-meta">
+              Agent triage · score {row.triageScore ?? "–"}
+              {row.rubricVersion ? ` · rubric ${row.rubricVersion}` : ""}
+            </h2>
+            <span className="text-[12px] text-faint">{when(row.triagedAt)}</span>
+            <button
+              className="ops-chip ml-auto"
+              title="Puts the ticket back in the triage queue"
+              onClick={() => void clearTriage({ token, id: row._id })}
+            >
+              Re-triage
+            </button>
+          </div>
           <p className="mt-2 max-w-prose whitespace-pre-wrap text-[13px] text-muted">
             {row.triageNotes || "(no notes)"}
           </p>
