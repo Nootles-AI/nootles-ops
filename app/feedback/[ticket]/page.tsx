@@ -310,6 +310,12 @@ export default function FeedbackDetail() {
         )}
         {row.env.sha && <span className="ops-chip">build · {row.env.sha}</span>}
         <span className="ops-chip">viewport · {row.env.viewport}</span>
+        {row.status === "done" && (
+          <span className="ops-chip" title="The in-app toast is shown once, on their next visit">
+            reporter told ·{" "}
+            {row.notifiedAt ? when(row.notifiedAt) : "not yet"}
+          </span>
+        )}
         {row.pageId && <span className="ops-chip">page · {row.pageId}</span>}
       </div>
 

@@ -62,6 +62,8 @@ export type FeedbackRow = {
   priority?: TicketPriority;
   category?: TicketCategory;
   email?: string;
+  /** When the reporter was told this was fixed. Absent = they have not been. */
+  notifiedAt?: number;
   /** Set = this repeats another ticket, and is hidden from the inbox. */
   duplicateOf?: string;
   duplicateSetBy?: "agent" | "human";
