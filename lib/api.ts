@@ -304,6 +304,11 @@ export const adminApi = {
     { token: string; id: string },
     null
   >("admin:feedbackClearTriage"),
+  feedbackClearAgentAttempt: makeFunctionReference<
+    "mutation",
+    { token: string; id: string },
+    null
+  >("admin:feedbackClearAgentAttempt"),
   opsConfigGet: makeFunctionReference<
     "query",
     { token: string },

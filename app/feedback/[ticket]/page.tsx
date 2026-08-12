@@ -52,6 +52,7 @@ export default function FeedbackDetail() {
   const setAgentSkip = useMutation(adminApi.feedbackSetAgentSkip);
   const setDuplicate = useMutation(adminApi.feedbackSetDuplicate);
   const clearTriage = useMutation(adminApi.feedbackClearTriage);
+  const clearAttempt = useMutation(adminApi.feedbackClearAgentAttempt);
 
   // Opening a ticket is what "seen" means — nobody should file that by hand.
   useEffect(() => {
@@ -252,6 +253,33 @@ export default function FeedbackDetail() {
           </div>
           <p className="mt-2 max-w-prose whitespace-pre-wrap text-[13px] text-muted">
             {row.triageNotes || "(no notes)"}
+          </p>
+        </section>
+      )}
+
+      {row.agentAttemptedAt !== undefined && (
+        <section className="ops-card p-4">
+          <div className="flex items-center gap-3">
+            <h2 className="ops-meta">
+              Agent attempt · {row.agentOutcome ?? "unknown"}
+            </h2>
+            <span className="text-[12px] text-faint">
+              {when(row.agentAttemptedAt)}
+            </span>
+            <button
+              className="ops-chip ml-auto"
+              title="Puts the ticket back in the implement queue"
+              onClick={() => void clearAttempt({ token, id: row._id })}
+            >
+              Let the agent retry
+            </button>
+          </div>
+          <p className="mt-2 text-[12px] text-faint">
+            {row.agentOutcome === "declined"
+              ? "The agent judged this one not safe to attempt unattended."
+              : row.agentOutcome === "failed"
+                ? "The attempt did not clear its own checks; nothing was filed."
+                : "A pull request was opened for this ticket."}
           </p>
         </section>
       )}
