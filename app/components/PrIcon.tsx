@@ -52,7 +52,10 @@ export function PrIcon({ state }: { state: PrState }) {
     );
   }
 
-  // Draft and open share their geometry; only weight and colour differ.
+  // Draft and open share their geometry; only weight and colour differ. The
+  // strokes stay solid in both: this glyph is drawn inside the watch cell,
+  // where dashed already means the machine never acted — and a draft PR is
+  // proof that it did.
   const hollow = state === "draft";
   return (
     <svg {...common}>
@@ -64,7 +67,7 @@ export function PrIcon({ state }: { state: PrState }) {
         stroke={color}
         strokeWidth={hollow ? 1.4 : 0}
       />
-      <path d="M4 4.7v6.6" {...line} {...(hollow ? { strokeDasharray: "2 1.8" } : {})} />
+      <path d="M4 4.7v6.6" {...line} />
       <circle
         cx="4"
         cy="11"
@@ -73,7 +76,7 @@ export function PrIcon({ state }: { state: PrState }) {
         stroke={color}
         strokeWidth={hollow ? 1.4 : 0}
       />
-      <path d="M10 4.7v4.6" {...line} {...(hollow ? { strokeDasharray: "2 1.8" } : {})} />
+      <path d="M10 4.7v4.6" {...line} />
       <circle
         cx="10"
         cy="3"
@@ -89,7 +92,6 @@ export function PrIcon({ state }: { state: PrState }) {
         fill="none"
         stroke={color}
         strokeWidth="1.4"
-        {...(hollow ? { strokeDasharray: "2 1.8" } : {})}
       />
     </svg>
   );

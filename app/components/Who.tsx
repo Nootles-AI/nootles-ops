@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useMemo } from "react";
+import Link from "next/link";
 import { useQuery } from "convex/react";
 import { adminApi, type UserRow } from "@/lib/api";
 import { shortUser } from "@/lib/format";
@@ -31,20 +32,63 @@ export function useWho(ownerId: string): UserRow | undefined {
   return useContext(DirectoryContext)?.get(ownerId);
 }
 
+/** The first thing a profile has been stamped with, ignoring blanks — a name
+ *  saved as an empty string is not a name, and `??` alone would take it. */
+function firstReal(...values: (string | null | undefined)[]): string {
+  for (const v of values) {
+    const t = v?.trim();
+    if (t) return t;
+  }
+  return "?";
+}
+
+export function Face({
+  user,
+  fallback,
+  large,
+}: {
+  user?: Pick<UserRow, "imageUrl" | "name" | "email">;
+  fallback: string;
+  large?: boolean;
+}) {
+  const initial = firstReal(user?.name, user?.email, fallback)[0].toUpperCase();
+  const size = large ? " is-lg" : "";
+  return user?.imageUrl ? (
+    // The name is always adjacent, so the face itself is decorative.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={user.imageUrl}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      className={`ops-face${size}`}
+    />
+  ) : (
+    <span className={`ops-face ops-face-blank${size}`} aria-hidden>
+      {initial}
+    </span>
+  );
+}
+
+/**
+ * A person. In a list row this is a real link to their page, which it could
+ * not be while it sat inside the row's own link — a nested link is a dead
+ * affordance, and the reporter is exactly who you want to look up next.
+ */
 export function Who({ ownerId }: { ownerId: string }) {
   const user = useWho(ownerId);
-  const label = user?.name ?? user?.email ?? shortUser(ownerId);
+  const label = firstReal(user?.name, user?.email, shortUser(ownerId));
+  // The name is always in the document; a narrow inbox takes it off the screen
+  // rather than out of the tree (see .ops-who-name in the container query), so
+  // the link never loses the only thing it has to announce.
   return (
-    <span className="ops-who" title={user?.email ?? ownerId}>
-      {user?.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={user.imageUrl} alt="" className="ops-who-face" />
-      ) : (
-        <span className="ops-who-face ops-who-blank" aria-hidden>
-          {label[0]?.toUpperCase() ?? "?"}
-        </span>
-      )}
+    <Link
+      href={`/users/${ownerId}`}
+      className="ops-who"
+      title={firstReal(user?.email, label)}
+    >
+      <Face user={user} fallback={label} />
       <span className="ops-who-name">{label}</span>
-    </span>
+    </Link>
   );
 }

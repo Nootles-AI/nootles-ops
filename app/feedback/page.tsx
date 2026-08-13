@@ -1,27 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { Fragment, useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import {
   adminApi,
   CATEGORY_LABELS,
-  type PrState,
+  KIND_WORDS,
+  type AgentRun,
+  type FeedbackListRow,
   type TicketCategory,
   type TicketPriority,
   type TicketStatus,
 } from "@/lib/api";
-import { ticketName, when } from "@/lib/format";
+import { useAct } from "@/lib/act";
+import { clock, ticketName } from "@/lib/format";
+import { useOps } from "@/lib/ops";
 import { useAdminToken } from "@/lib/session";
-import { PrIcon } from "../components/PrIcon";
+import { Empty, Loading } from "../components/Bits";
+import { Menu, type MenuEntry } from "../components/Menu";
 import { PriorityIcon } from "../components/PriorityIcon";
 import { StatusIcon } from "../components/StatusIcon";
-import { Who } from "../components/Who";
+import { TicketRow } from "../components/TicketRow";
 
 const KINDS = [
   { id: undefined, label: "All" },
   { id: "issue" as const, label: "Bugs" },
-  { id: "wish" as const, label: "Features" },
+  { id: "wish" as const, label: "Wishes" },
 ];
 
 const STATUSES: { id: TicketStatus | undefined; label: string }[] = [
@@ -49,16 +53,6 @@ const RANK: Record<TicketPriority, number> = {
 };
 
 const FILTERS_KEY = "nootles-ops:inbox-filters";
-
-/**
- * Which of a ticket's pull requests speaks for it in a one-icon column: the
- * furthest one along, so a merged PR beside an abandoned one reads as merged.
- */
-const PR_RANK: PrState[] = ["merged", "open", "draft", "closed"];
-
-function leadPr(states: PrState[]): PrState | null {
-  return PR_RANK.find((s) => states.includes(s)) ?? null;
-}
 
 type Filters = {
   kind?: "issue" | "wish";
@@ -107,73 +101,29 @@ export default function FeedbackInbox() {
   useEffect(() => {
     localStorage.setItem(FILTERS_KEY, JSON.stringify({ kind, status, category, sort }));
   }, [kind, status, category, sort]);
-  /** A right-clicked row's menu, in viewport coordinates. */
-  const [menu, setMenu] = useState<{
-    id: string;
-    status: TicketStatus;
-    kind: "issue" | "wish";
-    priority?: TicketPriority;
-    agentSkip?: boolean;
-    x: number;
-    y: number;
-  } | null>(null);
+
   const token = useAdminToken();
-  const setTicketStatus = useMutation(adminApi.feedbackSetStatus);
-  const setTicketPriority = useMutation(adminApi.feedbackSetPriority);
-  const setTicketKind = useMutation(adminApi.feedbackSetKind);
-  const setTicketAgentSkip = useMutation(adminApi.feedbackSetAgentSkip);
+  const { config, lastRun } = useOps();
+  const act = useAct();
+
+  /** The row a menu is open on, in viewport coordinates. */
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(
+    null,
+  );
+  /** The row a mutation is in flight for, so only that line dims. */
+  const [acted, setActed] = useState<string | null>(null);
+
+  const saveStatus = useMutation(adminApi.feedbackSetStatus);
+  const savePriority = useMutation(adminApi.feedbackSetPriority);
+  const saveKind = useMutation(adminApi.feedbackSetKind);
+  const saveAgentSkip = useMutation(adminApi.feedbackSetAgentSkip);
+
   const result = useQuery(adminApi.feedbackList, {
     token,
     paginationOpts: { numItems: 200, cursor: null },
     ...(kind ? { kind } : {}),
     ...(status ? { status } : {}),
   });
-
-  const menuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!menu) return;
-    // Containment check, not stopPropagation: the app hydrates the whole
-    // document, so React's delegated events live on `document` too — a
-    // sibling listener there still fires whatever propagation was stopped.
-    const onDown = (e: PointerEvent) => {
-      if (menuRef.current?.contains(e.target as Node)) return;
-      setMenu(null);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenu(null);
-    };
-    document.addEventListener("pointerdown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menu]);
-
-  const actStatus = (to: TicketStatus) => {
-    if (!menu) return;
-    void setTicketStatus({ token, id: menu.id, status: to }).catch(() => {});
-    setMenu(null);
-  };
-  const actPriority = (to?: TicketPriority) => {
-    if (!menu) return;
-    void setTicketPriority({
-      token,
-      id: menu.id,
-      ...(to ? { priority: to } : {}),
-    }).catch(() => {});
-    setMenu(null);
-  };
-  const actKind = (to: "issue" | "wish") => {
-    if (!menu) return;
-    void setTicketKind({ token, id: menu.id, kind: to }).catch(() => {});
-    setMenu(null);
-  };
-  const actAgentSkip = (skip: boolean) => {
-    if (!menu) return;
-    void setTicketAgentSkip({ token, id: menu.id, skip }).catch(() => {});
-    setMenu(null);
-  };
 
   const visible = result
     ? category
@@ -190,220 +140,449 @@ export default function FeedbackInbox() {
       : visible
     : undefined;
 
+  // Every mutation on this page goes through here: one place to record which
+  // row is resolving, one sentence when it fails.
+  const run = (row: FeedbackListRow, what: string, call: Promise<unknown>) => {
+    setActed(row._id);
+    act.run(what, call);
+  };
+
+  const entriesFor = (row: FeedbackListRow): MenuEntry[] => {
+    const name = ticketName(row.number);
+    const out: MenuEntry[] = [];
+
+    if (row.status !== "new") {
+      out.push({
+        kind: "item",
+        id: "unread",
+        label: "Mark as unread",
+        icon: <span className="ops-unread" aria-hidden />,
+        onSelect: () =>
+          run(
+            row,
+            `mark ${name} as unread`,
+            saveStatus({ token, id: row._id, status: "new" }),
+          ),
+      });
+      out.push({ kind: "sep", id: "sep-unread" });
+    }
+
+    for (const s of STATUSES) {
+      // A local const, not `s.id`: the narrowing has to survive into the
+      // closure below.
+      const to = s.id;
+      if (to === undefined || to === "new" || to === row.status) continue;
+      out.push({
+        kind: "item",
+        id: `status-${to}`,
+        label: s.label,
+        icon: <StatusIcon status={to} />,
+        onSelect: () =>
+          run(
+            row,
+            `set ${name} to ${s.label.toLowerCase()}`,
+            saveStatus({ token, id: row._id, status: to }),
+          ),
+      });
+    }
+
+    out.push({ kind: "sep", id: "sep-priority" });
+    for (const p of PRIORITIES) {
+      if (p.id === row.priority) continue;
+      out.push({
+        kind: "item",
+        id: `priority-${p.id}`,
+        label: p.label,
+        icon: <PriorityIcon priority={p.id} />,
+        onSelect: () =>
+          run(
+            row,
+            `set ${name} to ${p.label.toLowerCase()} priority`,
+            savePriority({ token, id: row._id, priority: p.id }),
+          ),
+      });
+    }
+    if (row.priority) {
+      out.push({
+        kind: "item",
+        id: "priority-none",
+        label: "No priority",
+        icon: <PriorityIcon />,
+        onSelect: () =>
+          run(
+            row,
+            `clear the priority on ${name}`,
+            savePriority({ token, id: row._id }),
+          ),
+      });
+    }
+
+    out.push({ kind: "sep", id: "sep-kind" });
+    const otherKind = row.kind === "issue" ? "wish" : "issue";
+    const queue = KIND_WORDS[otherKind].plural;
+    out.push({
+      kind: "item",
+      id: "kind",
+      label: `Move to ${queue}`,
+      icon: <MoveMark />,
+      onSelect: () =>
+        run(
+          row,
+          `move ${name} to ${queue}`,
+          saveKind({ token, id: row._id, kind: otherKind }),
+        ),
+    });
+
+    out.push({ kind: "sep", id: "sep-agent" });
+    out.push(
+      row.agentSkip
+        ? {
+            kind: "item",
+            id: "agent",
+            label: "Allow agent review",
+            icon: <AgentMark allowed />,
+            onSelect: () =>
+              run(
+                row,
+                `allow agent review on ${name}`,
+                saveAgentSkip({ token, id: row._id, skip: false }),
+              ),
+          }
+        : {
+            kind: "item",
+            id: "agent",
+            label: "Omit from agent review",
+            icon: <AgentMark />,
+            onSelect: () =>
+              run(
+                row,
+                `omit ${name} from agent review`,
+                saveAgentSkip({ token, id: row._id, skip: true }),
+              ),
+          },
+    );
+
+    return out;
+  };
+
+  // The menu reads the live row rather than a copy taken when it opened, so a
+  // ticket changed in another tab cannot offer the status it already has.
+  const target = menu && rows ? rows.find((r) => r._id === menu.id) : undefined;
+
+  const night = nightWindow(lastRun);
+  const filtered = kind !== undefined || status !== undefined || category !== undefined;
+  const sections =
+    rows && sort === "newest"
+      ? splitByNight(rows, night)
+      : rows
+        ? [{ group: null, rows }]
+        : [];
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-semibold tracking-tight">Inbox</h1>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {KINDS.map((k) => (
-            <button
-              key={k.label}
-              className={`ops-chip${kind === k.id ? " is-on" : ""}`}
-              onClick={() => setKind(k.id)}
-            >
-              {k.label}
-            </button>
-          ))}
-          <span className="mx-1 h-4 w-px self-center bg-border" aria-hidden />
-          {STATUSES.map((s) => (
-            <button
-              key={s.label}
-              className={`ops-chip${status === s.id ? " is-on" : ""}`}
-              onClick={() => setStatus(s.id)}
-            >
-              {s.label}
-            </button>
-          ))}
-          <span className="mx-1 h-4 w-px self-center bg-border" aria-hidden />
-          <button
-            className="ops-chip"
-            title="Toggle sort order"
-            onClick={() => setSort(sort === "newest" ? "priority" : "newest")}
-          >
-            Sort: {sort === "newest" ? "Newest" : "Priority"}
-          </button>
-          <select
-            className="ops-chip"
-            aria-label="Filter by category"
-            value={category ?? ""}
-            onChange={(e) =>
-              setCategory((e.target.value || undefined) as TicketCategory | undefined)
-            }
-          >
-            <option value="">All categories</option>
-            {(Object.keys(CATEGORY_LABELS) as TicketCategory[]).map((c) => (
-              <option key={c} value={c}>
-                {CATEGORY_LABELS[c]}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <h1 className="ops-title">Inbox</h1>
+        {act.failed && (
+          <p className="ops-failed" role="status">
+            Could not {act.failed}. Try again.
+          </p>
+        )}
 
-      <section className="ops-card">
+        {/* The bar scrolls on its own below about 900px rather than wrapping
+            into three ragged lines or dragging the page sideways. */}
+        <div className="ops-scroll ml-auto max-w-full">
+          <div className="flex w-max items-center gap-1.5 py-1">
+            <div className="ops-ladder" role="radiogroup" aria-label="Kind">
+              {KINDS.map((k) => (
+                <button
+                  key={k.label}
+                  type="button"
+                  role="radio"
+                  aria-checked={kind === k.id}
+                  onClick={() => setKind(k.id)}
+                >
+                  {k.label}
+                </button>
+              ))}
+            </div>
+
+            <span className="mx-1 h-4 w-px self-center bg-rule" aria-hidden />
+
+            <div className="ops-ladder" role="radiogroup" aria-label="Status">
+              {STATUSES.map((s) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  role="radio"
+                  aria-checked={status === s.id}
+                  onClick={() => setStatus(s.id)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            <span className="mx-1 h-4 w-px self-center bg-rule" aria-hidden />
+
+            <div className="ops-ladder" role="radiogroup" aria-label="Sort by">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={sort === "newest"}
+                onClick={() => setSort("newest")}
+              >
+                Newest
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={sort === "priority"}
+                onClick={() => setSort("priority")}
+              >
+                Priority
+              </button>
+            </div>
+
+            <span className="mx-1 h-4 w-px self-center bg-rule" aria-hidden />
+
+            <select
+              className="ops-chip"
+              aria-label="Filter by category"
+              value={category ?? ""}
+              onChange={(e) =>
+                setCategory((e.target.value || undefined) as TicketCategory | undefined)
+              }
+            >
+              <option value="">All categories</option>
+              {(Object.keys(CATEGORY_LABELS) as TicketCategory[]).map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORY_LABELS[c]}
+                </option>
+              ))}
+            </select>
+
+            {/* The rule, stated where the scores are read. */}
+            <span
+              className="ops-mono self-center pl-1 text-ink-3"
+              title="Tonight the agent will not pick up a ticket scoring below this."
+            >
+              RUBRIC ≥ {config ? config.scoreThreshold : "—"}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <section className="ops-sheet">
         {rows === undefined ? (
-          <p className="p-4 text-muted">Loading…</p>
+          <Loading />
         ) : rows.length === 0 ? (
-          <p className="p-4 text-[13px] text-muted">Inbox zero.</p>
+          <Empty>
+            {!filtered
+              ? "Inbox zero."
+              : // The category is matched here, after the server's 200 — so
+                // with more pages behind it, "nothing matches" would be a
+                // claim about the whole inbox that this page cannot make.
+                result?.isDone === false
+                ? "No matches in the newest 200 reports. Narrow the filters to reach further back."
+                : "No reports match these filters."}
+          </Empty>
         ) : (
-          <ul>
-            {rows.map((f) => {
-              const unread = f.status === "new";
-              return (
-                <li key={f._id} className="border-b border-border last:border-none">
-                  <Link
-                    href={`/feedback/${ticketName(f.number)}`}
-                    className={`ops-ticket${unread ? " is-unread" : ""}`}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      setMenu({
-                        id: f._id,
-                        status: f.status,
-                        kind: f.kind,
-                        priority: f.priority,
-                        agentSkip: f.agentSkip,
-                        x: e.clientX,
-                        y: e.clientY,
-                      });
-                    }}
-                  >
-                    <span className="ops-ticket-slot" aria-hidden>
-                      {unread && <span className="ops-unread-dot" />}
-                    </span>
-                    <PriorityIcon priority={f.priority} />
-                    <StatusIcon status={f.status} />
-                    <span className="ops-ticket-id">{ticketName(f.number)}</span>
-                    <span className="ops-meta w-9 shrink-0">
-                      {f.kind === "issue" ? "bug" : "wish"}
-                    </span>
-                    <span className="ops-ticket-title">{f.text}</span>
-                    {leadPr(f.prStates) && (
-                      <span className="inline-flex items-center gap-1">
-                        <PrIcon state={leadPr(f.prStates)!} />
-                        {f.prStates.length > 1 && (
-                          <span className="ops-ticket-prcount">
-                            {f.prStates.length}
-                          </span>
-                        )}
-                      </span>
-                    )}
-                    {f.agentSkip && (
-                      <span
-                        className="ops-ticket-omitted"
-                        title="Omitted from agent review"
-                      >
-                        omitted
-                      </span>
-                    )}
-                    {f.triageScore !== undefined && (
-                      <span className="ops-ticket-score" title="Concreteness">
-                        {f.triageScore}
-                      </span>
-                    )}
-                    {f.category && f.category !== "general" && (
-                      <span className="ops-ticket-cat">
-                        {CATEGORY_LABELS[f.category]}
-                      </span>
-                    )}
-                    <span className="ops-ticket-carries">
-                      {[
-                        f.screenshotUrl && "shot",
-                        f.replayUrl && "replay",
-                        f.consoleLog && "console",
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
-                    <span className="max-w-44 shrink-0">
-                      <Who ownerId={f.ownerId} />
-                    </span>
-                    <span className="w-14 shrink-0 text-right text-[12px] text-faint">
-                      {when(f.createdAt)}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <div className="ops-rows" aria-busy={act.busy}>
+              {/* Keyed by position, not by group: `createdAt` is the
+                  deployment's own stamp and need not agree with the order the
+                  page arrives in, and a band that repeats must not collide
+                  with the one before it. */}
+              {sections.map((section, i) => (
+                <Fragment key={`${section.group ?? "all"}-${i}`}>
+                  {section.group && (
+                    <GroupLegend group={section.group} night={night} />
+                  )}
+                  {section.rows.map((row) => (
+                    // The wrapped shape the sheet already knows
+                    // (`.ops-rows > :last-child > .ops-row` drops the last
+                    // hairline), and the one place a single resolving line can
+                    // dim without taking the other 199 with it.
+                    <div
+                      key={row._id}
+                      className={
+                        act.busy && acted === row._id ? "is-resolving" : undefined
+                      }
+                    >
+                      <TicketRow
+                        row={row}
+                        threshold={config?.scoreThreshold}
+                        menuOpen={menu?.id === row._id}
+                        onMenu={(at, r) => setMenu({ id: r._id, ...at })}
+                      />
+                    </div>
+                  ))}
+                </Fragment>
+              ))}
+            </div>
+            {result && !result.isDone && (
+              <p className="ops-note border-t border-rule px-2.5 py-2">
+                The newest 200 reports. Narrow the filters to reach further back.
+              </p>
+            )}
+          </>
         )}
       </section>
 
-      {menu && (
-        <div
-          ref={menuRef}
-          className="ops-menu"
-          role="menu"
-          style={{ left: menu.x, top: menu.y }}
-        >
-          {menu.status !== "new" && (
-            <>
-              <button
-                className="ops-menu-item"
-                role="menuitem"
-                onClick={() => actStatus("new")}
-              >
-                <span className="ops-unread-dot" aria-hidden />
-                Mark as unread
-              </button>
-              <div className="ops-menu-sep" aria-hidden />
-            </>
-          )}
-          {STATUSES.filter(
-            (s): s is { id: TicketStatus; label: string } =>
-              s.id !== undefined && s.id !== "new" && s.id !== menu.status,
-          ).map((s) => (
-            <button
-              key={s.id}
-              className="ops-menu-item"
-              role="menuitem"
-              onClick={() => actStatus(s.id)}
-            >
-              <StatusIcon status={s.id} />
-              {s.label}
-            </button>
-          ))}
-          <div className="ops-menu-sep" aria-hidden />
-          {PRIORITIES.filter((p) => p.id !== menu.priority).map((p) => (
-            <button
-              key={p.id}
-              className="ops-menu-item"
-              role="menuitem"
-              onClick={() => actPriority(p.id)}
-            >
-              <PriorityIcon priority={p.id} />
-              {p.label}
-            </button>
-          ))}
-          {menu.priority && (
-            <button
-              className="ops-menu-item"
-              role="menuitem"
-              onClick={() => actPriority(undefined)}
-            >
-              <PriorityIcon />
-              No priority
-            </button>
-          )}
-          <div className="ops-menu-sep" aria-hidden />
-          <button
-            className="ops-menu-item"
-            role="menuitem"
-            onClick={() => actKind(menu.kind === "issue" ? "wish" : "issue")}
-          >
-            <span className="ops-meta">{menu.kind === "issue" ? "wish" : "bug"}</span>
-            Move to {menu.kind === "issue" ? "feature requests" : "bug reports"}
-          </button>
-          <div className="ops-menu-sep" aria-hidden />
-          <button
-            className="ops-menu-item"
-            role="menuitem"
-            onClick={() => actAgentSkip(!menu.agentSkip)}
-          >
-            <span className="ops-meta">{menu.agentSkip ? "allow" : "omit"}</span>
-            {menu.agentSkip ? "Allow agent review" : "Omit from agent review"}
-          </button>
-        </div>
+      {menu && target && (
+        <Menu
+          x={menu.x}
+          y={menu.y}
+          label={`Actions for ${ticketName(target.number)}`}
+          entries={entriesFor(target)}
+          onClose={() => setMenu(null)}
+        />
       )}
     </div>
+  );
+}
+
+/* ==========================================================================
+   The overnight boundary, in the list.
+
+   The handover strip has little to say on a quiet night, but the inbox is
+   read every morning regardless. These separators put the night's edge — and
+   the run's own counters — in the page the operator actually lives in.
+   ======================================================================== */
+
+type Group = "today" | "night" | "earlier";
+
+type Night = { from: number; to: number; run: AgentRun };
+
+/**
+ * The newest run's window, but only while it is still the night just gone. A
+ * week-old run would drop a chronological band into the middle of rows that
+ * have nothing to do with it, which is worse than no band at all.
+ */
+function nightWindow(run: AgentRun | undefined): Night | null {
+  if (!run) return null;
+  // Age is taken from the run's own clock, not from the window's end: a run
+  // that died mid-night keeps `status: "running"` and no `finishedAt` for
+  // good, and an end of `now` would keep such a run looking fresh for good
+  // with it — swallowing days of rows into one band of the machine's paper.
+  const anchor = run.finishedAt ?? run.startedAt;
+  if (Date.now() - anchor > 24 * 3600_000) return null;
+  return { from: run.startedAt, to: run.finishedAt ?? Date.now(), run };
+}
+
+function startOfToday(): number {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+/**
+ * Rows arrive newest-first, so the groups are three descending cuts and never
+ * interleave. Empty groups draw no legend — an unsigned band is a claim, and
+ * this one would be false.
+ */
+function splitByNight(
+  rows: FeedbackListRow[],
+  night: Night | null,
+): { group: Group | null; rows: FeedbackListRow[] }[] {
+  const dawn = startOfToday();
+  const of = (at: number): Group =>
+    night
+      ? at >= night.to
+        ? "today"
+        : at >= night.from
+          ? "night"
+          : "earlier"
+      : at >= dawn
+        ? "today"
+        : "earlier";
+
+  const out: { group: Group | null; rows: FeedbackListRow[] }[] = [];
+  for (const row of rows) {
+    const g = of(row.createdAt);
+    const last = out.at(-1);
+    if (last && last.group === g) last.rows.push(row);
+    else out.push({ group: g, rows: [row] });
+  }
+  return out;
+}
+
+function GroupLegend({ group, night }: { group: Group; night: Night | null }) {
+  const isNight = group === "night";
+  const label =
+    group === "today" ? "Today" : group === "night" ? "Overnight" : "Earlier";
+
+  // What the machine did, in the machine's own numbers, on the machine's
+  // paper. Elsewhere the legend is a plain human heading.
+  const note = isNight
+    ? night &&
+      `${clock(night.from)}–${night.run.finishedAt ? clock(night.to) : "NOW"} · READ ${night.run.ticketsRead} · SCORED ${night.run.scored} · FILED ${night.run.prsFiled}`
+    : group === "today" && night?.run.finishedAt
+      ? `SINCE ${clock(night.to)}`
+      : null;
+
+  return (
+    <div className={`ops-group${isNight ? " is-night" : ""}`}>
+      <h2 className="ops-eyebrow">{label}</h2>
+      {note && (
+        <span
+          className={`ops-mono min-w-0 truncate ${isNight ? "text-machine" : "text-ink-3"}`}
+        >
+          {note}
+        </span>
+      )}
+      <div className="ops-group-rule" aria-hidden />
+    </div>
+  );
+}
+
+/** Into the other queue. */
+function MoveMark() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden className="shrink-0">
+      <path
+        d="M1.8 7h6.4M6 4.4 8.7 7 6 9.6"
+        fill="none"
+        stroke="var(--ink-2)"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M11.6 2.8v8.4"
+        stroke="var(--rule-strong)"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * The watch cell in miniature, so the menu item and the row say the same
+ * thing: dashed across it means the machine may not act here.
+ */
+function AgentMark({ allowed }: { allowed?: boolean }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden className="shrink-0">
+      <rect
+        x="1.2"
+        y="3.5"
+        width="11.6"
+        height="7"
+        rx="2"
+        fill="none"
+        stroke={allowed ? "var(--machine)" : "var(--rule-strong)"}
+        strokeWidth="1.3"
+      />
+      {!allowed && (
+        <path
+          d="M2.6 7h8.8"
+          stroke="var(--ink-2)"
+          strokeWidth="1.3"
+          strokeDasharray="2 1.8"
+        />
+      )}
+    </svg>
   );
 }

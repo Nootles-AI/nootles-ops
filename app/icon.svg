@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The signature at 16px: two papers and the line between them. Reports
+       stand above it in human ink; the agent's run lies below it on the
+       machine's paper. Drawn in the dark theme's values, where the machine's
+       paper is the raised slab, because a browser tab is chrome, not page. -->
+  <rect width="32" height="32" rx="7" fill="#1d2126"/>
+  <path d="M0 17h32v8a7 7 0 0 1-7 7H7a7 7 0 0 1-7-7z" fill="#282d35"/>
+  <rect x="0" y="16" width="32" height="1.5" fill="#e9ebef"/>
+  <g fill="#e9ebef">
+    <rect x="6" y="6" width="2" height="10" rx="1"/>
+    <rect x="13" y="10" width="2" height="6" rx="1"/>
+    <rect x="19" y="8" width="2" height="8" rx="1"/>
+    <rect x="25" y="11" width="2" height="5" rx="1"/>
+  </g>
+  <rect x="8" y="21" width="17" height="3" rx="1.5" fill="#88abea"/>
+</svg>

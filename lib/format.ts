@@ -23,6 +23,19 @@ export function ms(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}s` : `${Math.round(n)}ms`;
 }
 
+/**
+ * The wall-clock time, which is what the night is measured in. `when` answers
+ * "how long ago"; this answers "at what hour" — the question the handover
+ * strip and the watch readout are both asking.
+ */
+export function clock(at: number): string {
+  return new Date(at).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 export function pctOf(part: number, whole: number): string {
   return whole ? `${Math.round((part / whole) * 100)}%` : "–";
 }

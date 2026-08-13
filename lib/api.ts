@@ -17,6 +17,24 @@ export type TicketStatus =
 
 export type TicketPriority = "urgent" | "high" | "medium" | "low";
 
+export type TicketKind = "issue" | "wish";
+
+/**
+ * The two words for the two kinds, in the three lengths the interface needs.
+ *
+ * One word per kind, everywhere. The dashboard used to call a `wish` a "wish"
+ * in a row, a "feature request" on its own page and a "Feature" in the filter
+ * — three names for one thing, which is three things to learn. `short` is
+ * sized for the row's 34px mono slot; nothing here may outgrow it.
+ */
+export const KIND_WORDS: Record<
+  TicketKind,
+  { short: string; long: string; plural: string }
+> = {
+  issue: { short: "bug", long: "bug report", plural: "bugs" },
+  wish: { short: "wish", long: "wish", plural: "wishes" },
+};
+
 export type TicketCategory =
   | "canvas"
   | "code"
@@ -40,6 +58,25 @@ export const CATEGORY_LABELS: Record<TicketCategory, string> = {
   sharing: "Sharing",
   account: "Account & sign-in",
   general: "General / other",
+};
+
+/**
+ * The same ten, three letters wide. A narrow inbox trades the words for these
+ * so the report's own text keeps the room; the full label rides along as the
+ * cell's title and accessible name, and the filter's dropdown lists them all
+ * in words, which is where anyone would look them up.
+ */
+export const CATEGORY_CODES: Record<TicketCategory, string> = {
+  canvas: "CNV",
+  code: "COD",
+  math: "MTH",
+  tables: "TBL",
+  autocomplete: "ATC",
+  chat: "CHT",
+  editor: "TXT",
+  sharing: "SHR",
+  account: "ACC",
+  general: "GEN",
 };
 
 export type FeedbackRow = {

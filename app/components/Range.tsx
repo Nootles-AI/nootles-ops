@@ -25,6 +25,11 @@ export function useRange(initial: RangeId = "7d") {
   return { ...sel, setRange };
 }
 
+/**
+ * One window at a time, so it is a radio group and not three buttons. The
+ * selected chip used to be marked by nothing but its fill, which told a
+ * screen reader nothing at all.
+ */
 export function RangeChips({
   range,
   onChange,
@@ -33,10 +38,12 @@ export function RangeChips({
   onChange: (r: RangeId) => void;
 }) {
   return (
-    <div className="flex gap-1.5" role="group" aria-label="Time range">
+    <div className="flex gap-1.5" role="radiogroup" aria-label="Time range">
       {RANGES.map((r) => (
         <button
           key={r.id}
+          role="radio"
+          aria-checked={range === r.id}
           className={`ops-chip${range === r.id ? " is-on" : ""}`}
           onClick={() => onChange(r.id)}
         >

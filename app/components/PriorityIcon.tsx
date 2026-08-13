@@ -16,23 +16,23 @@ export function PriorityIcon({ priority }: { priority?: TicketPriority }) {
   if (priority === "urgent") {
     return (
       <svg {...common}>
-        <rect x="1" y="1" width="12" height="12" rx="3" fill="var(--bad)" />
+        <rect x="1" y="1" width="12" height="12" rx="3" fill="var(--alarm)" />
         <path
           d="M7 3.8v3.9"
-          stroke="#fff"
+          stroke="var(--sheet)"
           strokeWidth="1.6"
           strokeLinecap="round"
         />
-        <circle cx="7" cy="10.1" r="0.9" fill="#fff" />
+        <circle cx="7" cy="10.1" r="0.9" fill="var(--sheet)" />
       </svg>
     );
   }
   if (!priority) {
     return (
       <svg {...common}>
-        <circle cx="3" cy="7" r="1" fill="var(--faint)" />
-        <circle cx="7" cy="7" r="1" fill="var(--faint)" />
-        <circle cx="11" cy="7" r="1" fill="var(--faint)" />
+        <circle cx="3" cy="7" r="1" fill="var(--ink-3)" />
+        <circle cx="7" cy="7" r="1" fill="var(--ink-3)" />
+        <circle cx="11" cy="7" r="1" fill="var(--ink-3)" />
       </svg>
     );
   }
@@ -52,7 +52,7 @@ export function PriorityIcon({ priority }: { priority?: TicketPriority }) {
           width="2.5"
           height={b.h}
           rx="1"
-          fill={i < lit ? "var(--muted)" : "var(--border)"}
+          fill={i < lit ? "var(--ink-2)" : "var(--rule)"}
         />
       ))}
     </svg>

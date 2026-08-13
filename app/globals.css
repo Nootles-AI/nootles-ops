@@ -1,480 +1,1429 @@
 @import "tailwindcss";
 
-/* Nootles-adjacent, light only: white surfaces, warm-gray ink, mono for
-   metadata. The dashboard should read like the product's back office. */
+/* ============================================================================
+   NOOTLES OPS — "The watch log"
+
+   One law, and everything here serves it:
+
+       THE MACHINE'S WORK IS DRAWN ON THE MACHINE'S PAPER,
+       ON THE FAR SIDE OF A LINE.
+
+   Two papers: Sheet is the human's, Watch is the agent's. Wherever both meet,
+   a 1px Ink line separates them — horizontal when the axis is time (the
+   handover strip on the Overview), vertical when the axis is a list (the
+   ticket page, the op timeline), and at row scale the tint alone (the inbox's
+   watch cell). The page stays light because darkness here is *relational*:
+   the night is a place and a material, not a background.
+
+   Scoping rule — keep the tint meaningful, and note that the paper and the
+   ink are scoped differently:
+
+     PAPER (Watch) marks THE CODING AGENT's own work, and nothing else.
+       Not "AI" generally. /calls and /suggestions are model telemetry, and a
+       console tail is the browser's — all of them stay off Watch.
+     INK (Machine) marks anything a machine wrote, which is a wider set: the
+       agent's triage notes, and also the editor's own model in a report's op
+       timeline, where the point is only "a person did not type this".
+
+   The paper is the scarcer signal. Spend it carefully or it stops meaning
+   anything, and the inbox's band of tint — and the gaps in it — go with it.
+
+   THE DISPLAY FACE IS FENCED. Big Shoulders is a condensed signage face; it
+   is one careless application away from a sports broadcast. It is legal in
+   exactly five places, all of them below: .ops-eyebrow, .ops-table th,
+   .ops-title, .ops-figure, .ops-tick (plus .ops-wordmark, which is a title).
+   Do not reach for it on a button, an empty state, or a table cell.
+   ========================================================================= */
+
 :root {
-  --background: oklch(0.985 0.002 90);
-  --surface: #ffffff;
-  --sunken: oklch(0.965 0.003 90);
-  --border: oklch(0.92 0.004 90);
-  --border-strong: oklch(0.85 0.005 90);
-  --foreground: oklch(0.25 0.005 90);
-  --muted: oklch(0.5 0.006 90);
-  --faint: oklch(0.65 0.005 90);
-  --ok: oklch(0.55 0.12 150);
-  --bad: oklch(0.55 0.16 25);
-  --warn: oklch(0.7 0.13 75);
+  /* -- The two papers, the desk they lie on, and the rules between ------- */
+  --deck: oklch(0.955 0.009 258); /* page ground — cool dusk, not white */
+  --sheet: oklch(0.995 0.002 258); /* the human's paper */
+  --watch: oklch(0.915 0.014 258); /* the machine's paper */
+  --rule: oklch(0.865 0.012 258);
+  --rule-strong: oklch(0.78 0.016 258);
 
-  /* Pull-request states, in GitHub's hues pulled toward this palette's
-     restraint: green offered, purple merged, red closed, grey not yet ready. */
-  --pr-draft: oklch(0.62 0.01 90);
-  --pr-open: oklch(0.55 0.13 150);
-  --pr-merged: oklch(0.53 0.16 300);
-  --pr-closed: oklch(0.55 0.16 25);
+  /* A cast shadow is not one of the remapped values — it stays dark in both
+     themes, or the thing it lifts stops sitting above the page. */
+  --lift:
+    0 1px 2px oklch(0.24 0.014 265 / 0.08),
+    0 10px 28px oklch(0.24 0.014 265 / 0.14);
 
-  --text-meta: 11px;
-  --text-ui: 13px;
-  --text-body: 14px;
-  --tracking-meta: 0.06em;
-  --radius: 6px;
-  --radius-lg: 10px;
+  /* -- Ink. Tertiary is banned on Watch paper; the floor there is 2. ----- */
+  --ink: oklch(0.24 0.014 265);
+  --ink-2: oklch(0.46 0.012 265); /* 6.0:1 on Sheet */
+  --ink-3: oklch(0.585 0.01 265); /* 4.55:1 on Sheet */
+
+  /* -- Interaction tints. Ink, not paper. Pointing at a row is not the
+        agent's work, and the two must not resolve to the same value: the
+        watch cell would vanish into the row under the cursor, which is the
+        one row you are reading. Being mixes, they compose over Sheet and
+        Watch alike, so a surface never has to correct for itself. --------- */
+  --hover: color-mix(in oklab, var(--ink) 6%, transparent);
+  --picked: color-mix(in oklab, var(--ink) 11%, transparent);
+
+  /* -- Authorship. Means one thing only: a machine wrote this. ----------- */
+  --machine: oklch(0.48 0.1 262);
+
+  /* -- State. Never authorship. ------------------------------------------
+     Amber used to mean both "in progress" and "the AI wrote this"; that
+     collision is why authorship got its own hue and Ember got its job back. */
+  --live: oklch(0.53 0.13 152); /* settled and good */
+  --ember: oklch(0.6 0.14 62); /* in hand, unfinished — fill only, 4.0:1 */
+  --alarm: oklch(0.53 0.19 27); /* urgent, failed, error */
+
+  /* -- Pull-request states derive. Who filed it matters more here than
+        which hue GitHub paints it, so merged is plain Ink. --------------- */
+  --pr-draft: var(--ink-3);
+  --pr-open: var(--live);
+  --pr-merged: var(--ink);
+  --pr-closed: oklch(0.55 0.09 27); /* a decision, not an incident */
+
+  /* -- Type scale. Everything in rem so the app scales with browser text
+        size; the floor is 11px and nothing goes below it. ---------------- */
+  --text-meta: 0.6875rem; /* 11px — machine metadata, eyebrows, th */
+  --text-note: 0.75rem; /* 12px — timestamps, notes */
+  --text-ui: 0.8125rem; /* 13px — rows, tables, controls */
+  --text-body: 0.875rem; /* 14px — prose */
+  --text-figure: 1.5rem; /* 24px — instrument numerals */
+  --text-title: 1.75rem; /* 28px — page titles */
+
+  --tracking-meta: 0.14em;
+
+  --radius: 4px; /* marks */
+  --radius-lg: 8px; /* panels */
+
+  --head-h: 44px;
+  --shell: 1440px;
 }
 
+/* The same nine values, remapped. The law inverts — in the dark the
+   machine's paper is the *raised* slab — which is the proof that authorship
+   is encoded structurally and not as a mood. Hues are unchanged. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --deck: oklch(0.2 0.012 258);
+    --sheet: oklch(0.245 0.012 258);
+    --watch: oklch(0.295 0.016 258);
+    --rule: oklch(0.36 0.014 258);
+    --rule-strong: oklch(0.46 0.016 258);
+    --ink: oklch(0.94 0.006 265);
+    --ink-2: oklch(0.74 0.01 265);
+    --ink-3: oklch(0.62 0.01 265);
+    --machine: oklch(0.74 0.1 262);
+    --live: oklch(0.72 0.13 152);
+    --ember: oklch(0.76 0.13 62);
+    --alarm: oklch(0.68 0.17 27);
+    --pr-closed: oklch(0.68 0.1 27);
+    --lift:
+      0 1px 2px oklch(0 0 0 / 0.44),
+      0 10px 28px oklch(0 0 0 / 0.56);
+  }
+}
+
+/* The theme is switched by attribute, so `color-scheme` has to be switched
+   with it — left to `light dark` the scrollbars, the select popups and the
+   number spinners follow the operating system into the other theme. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --deck: oklch(0.2 0.012 258);
+  --sheet: oklch(0.245 0.012 258);
+  --watch: oklch(0.295 0.016 258);
+  --rule: oklch(0.36 0.014 258);
+  --rule-strong: oklch(0.46 0.016 258);
+  --ink: oklch(0.94 0.006 265);
+  --ink-2: oklch(0.74 0.01 265);
+  --ink-3: oklch(0.62 0.01 265);
+  --machine: oklch(0.74 0.1 262);
+  --live: oklch(0.72 0.13 152);
+  --ember: oklch(0.76 0.13 62);
+  --alarm: oklch(0.68 0.17 27);
+  --pr-closed: oklch(0.68 0.1 27);
+  --lift:
+    0 1px 2px oklch(0 0 0 / 0.44),
+    0 10px 28px oklch(0 0 0 / 0.56);
+}
+
+/* `inline` is load-bearing: it inlines the value into the utility instead of
+   freezing an indirection at :root, which is what lets the dark remap above
+   reach `bg-sheet` and friends. */
 @theme inline {
-  --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-sunken: var(--sunken);
-  --color-border: var(--border);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-faint: var(--faint);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-deck: var(--deck);
+  --color-sheet: var(--sheet);
+  --color-watch: var(--watch);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-hover: var(--hover);
+  --color-machine: var(--machine);
+  --color-live: var(--live);
+  --color-ember: var(--ember);
+  --color-alarm: var(--alarm);
+
+  --font-display: var(--font-big-shoulders);
+  --font-sans: var(--font-public-sans);
+  --font-mono: var(--font-spline-mono);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  font-size: var(--text-body);
+/* Both branches: the attribute wins where it is set, the media query is the
+   default. `@custom-variant` defines; `@variant` applies. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
 }
 
-/* ---- Chrome ---- */
-.ops-meta {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: var(--text-meta);
-  letter-spacing: var(--tracking-meta);
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.ops-nav-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: var(--radius);
-  font-size: var(--text-ui);
-  color: var(--muted);
-}
-.ops-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: var(--foreground);
-  color: var(--surface);
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1;
-}
-.ops-nav-link:hover {
-  color: var(--foreground);
-  background: var(--sunken);
-}
-.ops-nav-link.is-on {
-  color: var(--foreground);
-  background: var(--sunken);
-  font-weight: 500;
+@layer base {
+  html {
+    color-scheme: light dark;
+  }
+  body {
+    background: var(--deck);
+    color: var(--ink);
+    font-family: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+    font-size: var(--text-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* The stylesheet used to have no focus rules at all, and killed the input
+     outline outright. One ring, hue-neutral on purpose so it never reads as
+     "machine". */
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--machine) 22%, transparent);
+  }
 }
 
-/* ---- Surfaces ---- */
-.ops-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-}
-.ops-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-ui);
-}
-.ops-table th {
-  text-align: left;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: var(--text-meta);
-  letter-spacing: var(--tracking-meta);
-  text-transform: uppercase;
-  font-weight: 500;
-  color: var(--muted);
-  white-space: nowrap;
-}
-.ops-table td {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-.ops-table tr:last-child td {
-  border-bottom: none;
-}
-.ops-table .num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+/* Everything below is layered so Tailwind utilities win. The old sheet was
+   unlayered, which meant `className="ops-card bg-sunken"` silently kept the
+   card's own background — a footgun for anyone styling on top. */
+@layer components {
+  /* ==== Shell ============================================================ */
+  .ops-shell {
+    width: min(100% - 2rem, var(--shell));
+    margin-inline: auto;
+  }
+
+  .ops-head {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    height: var(--head-h);
+    background: var(--sheet);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .ops-wordmark {
+    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-variation-settings: "opsz" 16;
+    white-space: nowrap;
+  }
+
+  /* The active item is signed, not filled: a 2px Ink underline flush to the
+     header's own bottom border. */
+  .ops-nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: var(--head-h);
+    padding-inline: 8px;
+    font-size: var(--text-ui);
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .ops-nav-link:hover {
+    color: var(--ink);
+  }
+  .ops-nav-link.is-on {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .ops-nav-link.is-on::after {
+    content: "";
+    position: absolute;
+    inset-inline: 6px;
+    bottom: -1px;
+    height: 2px;
+    background: var(--ink);
+  }
+
+  .ops-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 17px;
+    height: 15px;
+    padding-inline: 4px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--sheet);
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  /* The one thing an operator wants on every page: is the night shift armed,
+     and how did the last run go. */
+  .ops-readout {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    letter-spacing: 0.02em;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .ops-readout:hover {
+    color: var(--ink);
+  }
+  .ops-pip {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    background: var(--ink-3);
+  }
+  .ops-pip.is-ok {
+    background: var(--live);
+  }
+  .ops-pip.is-running {
+    background: var(--ember);
+  }
+  .ops-pip.is-failed {
+    background: var(--alarm);
+  }
+  .ops-pip.is-off {
+    background: transparent;
+    border: 1px solid var(--ink-3);
+  }
+
+  /* Below 720px the nav scrolls rather than collapsing to a hamburger — a
+     founder reading a report on a phone must reach Feedback in one tap. */
+  .ops-nav {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 calc(100% - 20px),
+      transparent
+    );
+    mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
+  }
+  .ops-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .ops-nav > * {
+    scroll-snap-align: start;
+  }
+  @media (min-width: 721px) {
+    .ops-nav {
+      overflow: visible;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+  }
+  /* While it scrolls, the nav is a scroll container in both axes and it is
+     exactly as tall as a link — so anything drawn outside a link's own box is
+     clipped away rather than scrolled to. Both marks come inside for the
+     duration: the section's underline and the focus ring. */
+  @media (width < 721px) {
+    .ops-nav-link.is-on::after {
+      bottom: 0;
+    }
+    .ops-nav-link:focus-visible {
+      outline-offset: -2px;
+    }
+  }
+
+  /* ==== Type ============================================================= */
+  .ops-eyebrow {
+    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
+    font-weight: 600;
+    font-size: var(--text-meta);
+    font-variation-settings: "opsz" 12;
+    letter-spacing: var(--tracking-meta);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .ops-title {
+    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
+    font-weight: 600;
+    font-size: var(--text-title);
+    font-variation-settings: "opsz" 36;
+    letter-spacing: 0.01em;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+
+  .ops-figure {
+    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
+    font-weight: 500;
+    font-size: var(--text-figure);
+    font-variation-settings: "opsz" 48;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+    color: var(--ink);
+  }
+
+  .ops-tick {
+    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
+    font-weight: 600;
+    font-size: var(--text-meta);
+    font-variation-settings: "opsz" 12;
+    letter-spacing: var(--tracking-meta);
+    color: var(--ink-2);
+  }
+
+  /* Machine metadata: always mono, always abbreviated. */
+  .ops-mono {
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Machine prose. The italic is load-bearing — it makes authorship legible
+     with no colour, no badge and no box, so it survives greyscale, a bad
+     panel, and forced-colors. */
+  .ops-machine-prose {
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-style: italic;
+    font-size: var(--text-ui);
+    line-height: 1.6;
+    color: var(--machine);
+  }
+
+  .ops-note {
+    font-size: var(--text-note);
+    color: var(--ink-2);
+  }
+  .ops-prose {
+    font-size: var(--text-body);
+    line-height: 1.55;
+    max-width: 68ch;
+  }
+
+  /* ==== Papers =========================================================== */
+  .ops-sheet {
+    background: var(--sheet);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    overflow: clip; /* a wide row can never break a corner */
+  }
+
+  /* The machine's paper. Only ever behind the coding agent's own work. */
+  .ops-watch {
+    background: var(--watch);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    overflow: clip;
+  }
+
+  .ops-panel-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* The unsigned line: where the night shift never got to. Dashed means one
+     thing across the whole app — the machine did not act here. */
+  .ops-unsigned {
+    border: 1px dashed var(--rule-strong);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    color: var(--ink-2);
+    font-size: var(--text-ui);
+  }
+
+  /* ==== Tables ===========================================================
+     A horizontally scrollable wrapper is a scroll container in *both* axes —
+     CSS computes the other axis to `auto` — so a `th` stuck to
+     `top: var(--head-h)` inside one sticks to a box that never scrolls
+     vertically, and never moves at all. Two hundred users and fifty calls are
+     worth a pinned heading, so the table pane gets a bounded height and the
+     heading sticks to the pane. `:has` keeps this off the wrappers that hold
+     something other than a table, which want horizontal scroll and no cap. */
+  .ops-scroll {
+    overflow-x: auto;
+  }
+  .ops-scroll:has(> .ops-table) {
+    overflow: auto;
+    max-height: min(70vh, calc(100vh - 13rem));
+    overscroll-behavior: contain;
+  }
+  .ops-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: var(--text-ui);
+  }
+  .ops-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    text-align: left;
+    padding: 7px 12px;
+    background: var(--sheet);
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
+    font-weight: 600;
+    font-size: var(--text-meta);
+    font-variation-settings: "opsz" 12;
+    letter-spacing: var(--tracking-meta);
+    text-transform: uppercase;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .ops-watch .ops-table th {
+    background: var(--watch);
+  }
+  .ops-table td {
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: middle;
+  }
+  .ops-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .ops-table tbody tr:hover td {
+    background: var(--hover);
+  }
+  .ops-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ==== Controls ========================================================= */
+  .ops-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 26px;
+    padding: 3px 9px;
+    border-radius: var(--radius);
+    border: 1px solid var(--rule);
+    background: var(--sheet);
+    font-size: var(--text-ui);
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  /* Only the ones you can actually press. A chip is also how this app spells
+     a read-only fact (`build · 4f2a1c`), and those must not light up. */
+  a.ops-chip:hover,
+  button.ops-chip:hover,
+  label.ops-chip:hover,
+  select.ops-chip:hover {
+    color: var(--ink);
+    border-color: var(--rule-strong);
+  }
+  .ops-chip.is-on {
+    color: var(--ink);
+    border-color: var(--rule-strong);
+    background: var(--picked);
+    font-weight: 500;
+  }
+  .ops-chip:disabled {
+    opacity: 0.5;
+  }
+
+  /* One segmented track, not six pills — a ladder is an order, and pills
+     hide that. */
+  .ops-ladder {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--sheet);
+    overflow: clip;
+  }
+  .ops-ladder > button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: var(--text-ui);
+    color: var(--ink-2);
+    border-left: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  .ops-ladder > button:first-child {
+    border-left: none;
+  }
+  .ops-ladder > button:hover {
+    background: var(--hover);
+    color: var(--ink);
+  }
+  .ops-ladder > button[aria-checked="true"] {
+    background: var(--picked);
+    color: var(--ink);
+    font-weight: 500;
+    box-shadow: inset 0 -2px 0 var(--ink);
+  }
+  /* The track clips, so the focus ring has to sit inside it. */
+  .ops-ladder > button:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .ops-input {
+    width: 100%;
+    padding: 5px 9px;
+    border-radius: var(--radius);
+    border: 1px solid var(--rule-strong);
+    background: var(--sheet);
+    color: var(--ink);
+    font-size: var(--text-ui);
+  }
+  .ops-input::placeholder {
+    color: var(--ink-3);
+  }
+
+  /* A console tail is machine output, but it is not the coding agent's work
+     — so it sits on the desk, not on the machine's paper. Keeping Watch for
+     the agent alone is what makes the tint mean anything. */
+  .ops-pre {
+    background: var(--deck);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 10px;
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    line-height: 1.6;
+    color: var(--ink-2);
+    overflow: auto;
+    max-height: 20rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* ==== The menu ========================================================= */
+  .ops-menu {
+    position: fixed;
+    z-index: 50;
+    min-width: 190px;
+    padding: 4px;
+    background: var(--sheet);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--lift);
+  }
+  .ops-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 30px;
+    padding: 5px 9px;
+    border-radius: var(--radius);
+    font-size: var(--text-ui);
+    color: var(--ink);
+    text-align: left;
+  }
+  .ops-menu-item:hover,
+  .ops-menu-item:focus-visible {
+    background: var(--hover);
+    outline: none;
+  }
+  .ops-menu-sep {
+    height: 1px;
+    margin: 4px 6px;
+    background: var(--rule);
+  }
+  .ops-menu-label {
+    padding: 6px 9px 3px;
+  }
+
+  /* The kebab: the same six mutations the right-click menu holds, reachable
+     from the keyboard. It takes the age's place while the row is under the
+     cursor — the age is the one field you are never reading at the moment you
+     reach for an action. */
+  .ops-kebab {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-top: -12px;
+    border-radius: var(--radius);
+    color: var(--ink-3);
+  }
+  /* The trade is hover's to make. A touch device has no hover and no tab key,
+     and the row's stretched link swallows the tap — so gating the handle on
+     hover there is six mutations that cannot be reached at all. On a coarse
+     pointer the handle is simply always out, and the age it stands in front
+     of gives up the slot for good. */
+  @media (hover: hover) {
+    .ops-kebab {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .ops-row:hover .ops-kebab,
+    .ops-row:has(.ops-kebab:focus-visible) .ops-kebab,
+    .ops-kebab[aria-expanded="true"] {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .ops-row:hover .ops-age,
+    .ops-row:has(.ops-kebab:focus-visible) .ops-age {
+      opacity: 0;
+    }
+  }
+  @media (hover: none) {
+    .ops-age {
+      opacity: 0;
+    }
+  }
+  .ops-kebab:hover {
+    color: var(--ink);
+    background: var(--sheet);
+  }
+
+  /* ==== The inbox row ====================================================
+     The row is a grid, not a link wrapping everything: the title's <Link>
+     stretches over the row with ::after, so the reporter and the kebab can be
+     real siblings instead of dead affordances nested inside another link. */
+  .ops-rows {
+    container-type: inline-size;
+    container-name: rows;
+  }
+
+  .ops-row {
+    position: relative;
+    display: grid;
+    grid-template-columns:
+      10px 14px 14px 52px 34px minmax(0, 1fr)
+      34px 96px 84px 146px 48px;
+    align-items: center;
+    gap: 8px;
+    padding: 0.3125rem 0.625rem;
+    font-size: var(--text-ui);
+    line-height: 1.125rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  /* Whether the rows are direct children or wrapped in list items. */
+  .ops-rows > .ops-row:last-child,
+  .ops-rows > :last-child > .ops-row {
+    border-bottom: none;
+  }
+  .ops-row:hover {
+    background: var(--hover);
+  }
+  .ops-row:has(.ops-row-hit:focus-visible) {
+    background: var(--hover);
+  }
+
+  /* The row's primary link. Its text is the accessible name; the ::after is
+     the hit area. */
+  .ops-row-hit {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-2);
+  }
+  .ops-row-hit::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+  .ops-row-hit:focus-visible {
+    outline: none;
+  }
+  .ops-row.is-unread .ops-row-hit {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  /* Anything that must be clickable in its own right sits above the hit. */
+  .ops-over {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+
+  .ops-unread {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--ink);
+  }
+
+  .ops-id {
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+
+  .ops-kind {
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
+  }
+
+  /* Three fixed slots, always drawn. A hollow mark scans as fast as a filled
+     one; a gap reads as nothing. */
+  .ops-carries {
+    display: flex;
+    gap: 3px;
+    color: var(--ink-3);
+  }
+  .ops-carries i {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    border: 1px solid currentColor;
+  }
+  .ops-carries i.is-on {
+    background: currentColor;
+  }
+
+  .ops-cat {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--text-note);
+    color: var(--ink-2);
+  }
+  .ops-cat-code {
+    display: none;
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    letter-spacing: 0.02em;
+  }
+
+  .ops-age {
+    text-align: right;
+    font-size: var(--text-note);
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+
+  /* ==== The watch cell ===================================================
+     The row's one piece of the machine's paper. Five scattered agent columns
+     collapse into this: what the night shift did to this ticket. Down 200
+     rows they form one band, and the gaps in it are the morning's job. */
+  .ops-cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    height: 20px;
+    padding-inline: 6px;
+    border-radius: var(--radius);
+    background: var(--watch);
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    font-variant-numeric: tabular-nums;
+    color: var(--machine);
+  }
+  /* Never handed to the agent — an outline with nothing in it. */
+  .ops-cell.is-unsigned {
+    background: transparent;
+    border: 1px dashed var(--rule-strong);
+  }
+  /* A human put it out of the machine's reach: a mark made inside the
+     machine's own column, at zero cost in width. */
+  .ops-cell.is-omitted::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    top: 50%;
+    border-top: 1.5px dashed var(--ink-2);
+  }
+
+  /* Filled when the score clears tonight's threshold, faint when it doesn't
+     — so two hundred numbers stop being compared against a remembered
+     constant. Plain while the threshold itself is still arriving: "nothing
+     clears the bar" is a claim, and it would be a false one. */
+  .ops-score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 17px;
+    height: 15px;
+    padding-inline: 3px;
+    border-radius: 3px;
+    color: var(--ink-2);
+  }
+  /* Under the bar the number is simply unlit: the cell is the machine's
+     paper, and there is no tone below Ink 2 there to be faint in. */
+  .ops-score.is-under {
+    color: var(--ink-2);
+  }
+  .ops-score.is-over {
+    background: color-mix(in oklab, var(--machine) 20%, transparent);
+    color: var(--machine);
+    font-weight: 600;
+  }
+  .ops-score.is-failed {
+    box-shadow: inset 0 -1px 0 var(--alarm);
+  }
+
+  /* The attempt's outcome, in the same square vocabulary the strip uses
+     below the line: filled = it happened, hollow = it was declined. */
+  .ops-outcome {
+    width: 5px;
+    height: 5px;
+    flex-shrink: 0;
+    border: 1px solid var(--machine);
+  }
+  .ops-outcome.is-declined {
+    border-color: var(--rule-strong);
+  }
+  .ops-outcome.is-failed {
+    background: var(--alarm);
+    border-color: var(--alarm);
+  }
+
+  .ops-prcount {
+    color: var(--ink-2);
+  }
+
+  /* Group separators. The overnight boundary is the real one, and its legend
+     carries the run's own counters — so the night's answer is present in the
+     page the operator actually lives in, quiet night or not. */
+  .ops-group {
+    position: sticky;
+    top: var(--head-h);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 24px;
+    padding-inline: 0.625rem;
+    background: var(--sheet);
+    border-bottom: 1px solid var(--rule);
+  }
+  .ops-group.is-night {
+    background: var(--watch);
+  }
+  .ops-group-rule {
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  /* First thing to go is the category's words and the reporter's name — both
+     are recoverable from the face and the code, and the report's own text is
+     the reason the list exists. */
+  @container rows (max-width: 1180px) {
+    .ops-row {
+      grid-template-columns:
+        10px 14px 14px 52px 34px minmax(0, 1fr)
+        34px 34px 84px 20px 48px;
+    }
+    /* Off the screen, not out of the tree — the three-letter code is the
+       abbreviation, and the word it stands for has to stay readable to
+       anything that is listening rather than looking. */
+    .ops-row .ops-cat-word {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      clip-path: inset(50%);
+    }
+    .ops-row .ops-cat-code {
+      display: inline;
+    }
+    /* Taken off the screen, not out of the document — the reporter's link
+       still needs a name to announce once its face is all that is drawn. */
+    .ops-row .ops-who-name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      clip-path: inset(50%);
+    }
+  }
+  @container rows (max-width: 860px) {
+    .ops-row {
+      grid-template-columns:
+        10px 14px 14px 52px minmax(0, 1fr)
+        84px 20px 44px;
+    }
+    .ops-row > .ops-kind,
+    .ops-row > .ops-carries,
+    .ops-row > .ops-cat {
+      display: none;
+    }
+  }
+  @container rows (max-width: 620px) {
+    .ops-row {
+      grid-template-columns: 10px 14px 14px minmax(0, 1fr) 84px 44px;
+      grid-template-areas:
+        "dot pri sta id  watch age"
+        "ttl ttl ttl ttl ttl   who";
+      row-gap: 2px;
+      padding-block: 0.375rem;
+    }
+    .ops-row > .ops-slot-dot {
+      grid-area: dot;
+    }
+    .ops-row > .ops-slot-pri {
+      grid-area: pri;
+    }
+    .ops-row > .ops-slot-sta {
+      grid-area: sta;
+    }
+    .ops-row > .ops-id {
+      grid-area: id;
+    }
+    .ops-row > .ops-cell {
+      grid-area: watch;
+    }
+    .ops-row > .ops-age {
+      grid-area: age;
+    }
+    .ops-row > .ops-row-hit {
+      grid-area: ttl;
+      white-space: normal;
+      overflow: visible;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+    .ops-row > .ops-slot-who {
+      grid-area: who;
+      justify-self: end;
+    }
+  }
+
+  /* ==== The handover strip ===============================================
+     The hero, and the only place the line is full-bleed. Reports above it in
+     human ink, the agent's runs below it on the machine's paper. Built from
+     positioned elements rather than SVG so every mark can be a real focusable
+     link with an accessible name. */
+  .ops-strip {
+    position: relative;
+    height: 132px;
+    background: var(--sheet);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .ops-strip-night {
+    position: absolute;
+    top: 0;
+    bottom: 18px;
+    background: var(--watch);
+  }
+  .ops-strip-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 64px;
+    height: 1px;
+    background: var(--ink);
+  }
+  .ops-strip-report {
+    position: absolute;
+    bottom: 68px;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+  .ops-strip-report::after {
+    content: "";
+    position: absolute;
+    left: -0.5px;
+    top: -3px;
+    width: 3px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--ink);
+    opacity: 0;
+  }
+  .ops-strip-report.is-unread::after {
+    opacity: 1;
+  }
+  .ops-strip-report:hover,
+  .ops-strip-report:focus-visible {
+    background: var(--machine);
+  }
+  .ops-strip-run {
+    position: absolute;
+    top: 72px;
+    height: 6px;
+    min-width: 3px;
+    background: color-mix(in oklab, var(--machine) 22%, transparent);
+    border-top: 1.5px solid var(--ink-3);
+  }
+  .ops-strip-run.is-ok {
+    border-top-color: var(--live);
+  }
+  /* No right edge: a run still in flight reaches the axis's own edge and runs
+     off it. It cannot be dashed — dashed says the machine did not act, and
+     here it is acting. */
+  .ops-strip-run.is-running {
+    border-top-color: var(--ember);
+  }
+  .ops-strip-run.is-failed {
+    border-top-color: var(--alarm);
+  }
+  .ops-strip-cap {
+    position: absolute;
+    top: 80px;
+    width: 2px;
+    height: 6px;
+    background: var(--machine);
+  }
+  .ops-strip-cap::after {
+    content: "";
+    position: absolute;
+    left: -1px;
+    bottom: -4px;
+    width: 4px;
+    height: 4px;
+    background: var(--machine);
+  }
+  .ops-strip-cap.is-declined::after {
+    background: var(--sheet);
+    border: 1px solid var(--machine);
+  }
+  .ops-strip-cap.is-error,
+  .ops-strip-cap.is-error::after {
+    background: var(--alarm);
+  }
+  .ops-strip-label {
+    position: absolute;
+    top: 92px;
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    letter-spacing: 0.02em;
+    color: var(--machine);
+    white-space: nowrap;
+  }
+  .ops-strip-tick {
+    position: absolute;
+    bottom: 2px;
+    transform: translateX(-50%);
+  }
+  .ops-strip-edge {
+    position: absolute;
+    top: 0;
+    bottom: 18px;
+    width: 1px;
+    background: var(--rule-strong);
+  }
+
+  /* ==== The instruments row ==============================================
+     Eight figures on one line, divided by rules — not eight identical boxes
+     that make the least important number look as loud as the most. */
+  .ops-instruments {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    background: var(--sheet);
+    overflow: clip;
+  }
+  @media (min-width: 640px) {
+    .ops-instruments {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1100px) {
+    .ops-instruments {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+  }
+  .ops-instrument {
+    min-width: 0;
+    padding: 10px 12px;
+    border-left: 1px solid var(--rule);
+    border-top: 1px solid var(--rule);
+  }
+  /* Whichever cell starts a row must not draw a left rule against the
+     container's own border, or the edge reads as a doubled line. Every such
+     exemption is bounded to the step that owns it: they are written with
+     :nth-child, so an unbounded one outranks the next step's re-draw whatever
+     the source order, and punches a hole mid-row. */
+  @media (width < 640px) {
+    .ops-instrument:nth-child(2n + 1) {
+      border-left: none;
+    }
+  }
+  .ops-instruments > :nth-child(-n + 2) {
+    border-top: none;
+  }
+  @media (width >= 640px) {
+    .ops-instrument:nth-child(-n + 4) {
+      border-top: none;
+    }
+  }
+  @media (640px <= width < 1100px) {
+    .ops-instrument:nth-child(4n + 1) {
+      border-left: none;
+    }
+  }
+  @media (width >= 1100px) {
+    .ops-instrument {
+      border-top: none;
+    }
+    .ops-instrument:first-child {
+      border-left: none;
+    }
+  }
+
+  /* ==== People =========================================================== */
+  .ops-who {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-size: var(--text-note);
+    color: var(--ink-2);
+  }
+  .ops-who:hover {
+    color: var(--ink);
+  }
+  .ops-face {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    object-fit: cover;
+    /* A well on the desk, not the machine's paper: a face is on every page,
+       and the tint has one job. */
+    background: var(--deck);
+    border: 1px solid var(--rule);
+  }
+  .ops-face.is-lg {
+    width: 30px;
+    height: 30px;
+  }
+  .ops-face-blank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    color: var(--ink-2);
+  }
+  .ops-who-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ==== Pull requests ==================================================== */
+  .ops-pr {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    font-size: var(--text-ui);
+    border-bottom: 1px solid var(--rule);
+  }
+  .ops-pr:last-child {
+    border-bottom: none;
+  }
+  .ops-pr:hover {
+    background: color-mix(in oklab, var(--ink) 5%, transparent);
+  }
+  /* A 3px edge in the machine's ink: the agent filed this one. */
+  .ops-pr.is-agent {
+    box-shadow: inset 3px 0 0 var(--machine);
+  }
+  .ops-pr-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-ui);
+    color: var(--ink);
+  }
+  .ops-pr:hover .ops-pr-title {
+    text-decoration: underline;
+  }
+  .ops-pr-state {
+    flex-shrink: 0;
+    width: 4.25rem;
+    text-align: center;
+    padding: 1px 0;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    letter-spacing: 0.02em;
+  }
+  .ops-pr-state.is-draft {
+    color: var(--pr-draft);
+  }
+  /* Draft is the one PR state drawn in tertiary, and this list goes on the
+     machine's paper whenever every request in it is the agent's. */
+  .ops-watch .ops-pr-state.is-draft {
+    color: var(--ink-2);
+  }
+  .ops-pr-state.is-open {
+    color: var(--pr-open);
+  }
+  .ops-pr-state.is-merged {
+    color: var(--pr-merged);
+  }
+  .ops-pr-state.is-closed {
+    color: var(--pr-closed);
+  }
+
+  /* ==== The op timeline ==================================================
+     The line again, vertical: what the person did on the left, what the
+     machine did on the right, hanging off a 1px rule. */
+  .ops-ops {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    column-gap: 12px;
+    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-size: var(--text-meta);
+    line-height: 1.7;
+  }
+  .ops-ops-rule {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    background: var(--rule-strong);
+  }
+  .ops-op {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--ink-2);
+  }
+  .ops-op.is-human {
+    grid-column: 1;
+    text-align: right;
+  }
+  .ops-op.is-ai {
+    grid-column: 3;
+    color: var(--machine);
+    font-style: italic;
+  }
+  .ops-op-feature {
+    color: var(--ink-3);
+    font-style: normal;
+  }
+
+  /* ==== Status dots (tables) ============================================= */
+  .ops-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--ink-3);
+  }
+  .ops-dot.is-ok {
+    background: var(--live);
+  }
+  .ops-dot.is-bad {
+    background: var(--alarm);
+  }
+  .ops-dot.is-warn {
+    background: var(--ember);
+  }
+  .ops-dot.is-off {
+    background: transparent;
+    border: 1px solid var(--ink-3);
+  }
+
+  /* ==== Mutation feedback ================================================
+     Every mutation used to be `.catch(() => {})`, so a failure looked exactly
+     like a success. It resolves, or it says so. */
+  .is-resolving {
+    opacity: 0.55;
+    transition: opacity 120ms linear;
+  }
+  .ops-failed {
+    color: var(--alarm);
+    font-size: var(--text-note);
+  }
 }
 
-/* ---- Controls ---- */
-.ops-chip {
-  padding: 3px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  font-size: var(--text-ui);
-  color: var(--muted);
-  white-space: nowrap;
+/* One orchestrated moment, and it is the log writing itself out: the horizon
+   draws left to right and the night's marks arrive in time order. Nothing
+   else in the app moves for its own sake. */
+@keyframes ops-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
 }
-.ops-chip:hover {
-  color: var(--foreground);
-  border-color: var(--border-strong);
-}
-.ops-chip.is-on {
-  color: var(--foreground);
-  border-color: var(--border-strong);
-  background: var(--sunken);
-  font-weight: 500;
-}
-
-/* ---- Status dots ---- */
-.ops-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--faint);
-}
-.ops-dot.is-new {
-  background: var(--foreground);
-}
-.ops-dot.is-ok {
-  background: var(--ok);
-}
-.ops-dot.is-bad {
-  background: var(--bad);
-}
-.ops-dot.is-warn {
-  background: var(--warn);
-}
-/* Declined / canceled: present, answered, out of the way. */
-.ops-dot.is-off {
-  background: transparent;
-  border: 1px solid var(--faint);
+@keyframes ops-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-/* ---- Inbox rows — Linear's notification anatomy: unread dot, status
-   icon, bold-while-unread title, quiet metadata right-aligned. ---- */
-.ops-ticket {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px 9px 8px;
-  font-size: var(--text-ui);
+.ops-strip-line {
+  animation: ops-draw 420ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
-.ops-ticket:hover {
-  background: var(--sunken);
-}
-.ops-ticket-slot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 10px;
-  flex-shrink: 0;
-}
-.ops-unread-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--foreground);
-}
-.ops-ticket-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--muted);
-}
-.ops-ticket.is-unread .ops-ticket-title {
-  color: var(--foreground);
-  font-weight: 600;
-}
-.ops-ticket-carries {
-  flex-shrink: 0;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: var(--text-meta);
-  letter-spacing: var(--tracking-meta);
-  color: var(--faint);
-  white-space: nowrap;
+.ops-strip-report,
+.ops-strip-run,
+.ops-strip-cap,
+.ops-strip-label {
+  animation: ops-arrive 90ms linear both;
+  animation-delay: calc(var(--t, 0) * 260ms + 60ms);
 }
 
-/* The ticket's name in a list. Tabular so a column of them lines up. */
-.ops-ticket-id {
-  flex-shrink: 0;
-  width: 3.75rem;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
-  color: var(--faint);
-  white-space: nowrap;
-}
-
-/* A ticket the agent will never be handed. Visible in the list on purpose —
-   an invisible mute is one you forget you set. */
-.ops-ticket-omitted {
-  flex-shrink: 0;
-  padding: 1px 7px;
-  border-radius: 999px;
-  border: 1px dashed var(--border-strong);
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: var(--faint);
-  white-space: nowrap;
-}
-
-/* The concreteness score, where one has been written. */
-.ops-ticket-score {
-  flex-shrink: 0;
-  min-width: 1.75rem;
-  text-align: right;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-}
-
-/* Who applied an op, in the report's timeline. */
-.ops-op-source {
-  flex-shrink: 0;
-  width: 4.5rem;
-  color: var(--faint);
-}
-.ops-op-source.is-ai {
-  color: var(--warn);
-}
-
-/* More than one PR on a ticket, beside the icon that speaks for them. */
-.ops-ticket-prcount {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  color: var(--faint);
-}
-
-/* ---- Pull requests ---- */
-
-/* A linked PR gets a full row, the way Linear gives one to each. Its title is
-   the subject; repo, state and age trail off to the right. */
-.ops-pr-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  font-size: var(--text-ui);
-}
-.ops-pr-row:hover {
-  background: var(--sunken);
-}
-.ops-pr-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 12px;
-}
-.ops-pr-row:hover .ops-pr-title {
-  text-decoration: underline;
-}
-.ops-pr-repo {
-  flex-shrink: 0;
-  font-size: var(--text-meta);
-  color: var(--faint);
-  white-space: nowrap;
-}
-.ops-pr-num {
-  margin-left: 4px;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
-}
-.ops-pr-state {
-  flex-shrink: 0;
-  width: 3.75rem;
-  text-align: center;
-  padding: 1px 0;
-  border-radius: 999px;
-  border: 1px solid currentColor;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 10px;
-  letter-spacing: 0.04em;
-}
-.ops-pr-state.is-draft {
-  color: var(--pr-draft);
-}
-.ops-pr-state.is-open {
-  color: var(--pr-open);
-}
-.ops-pr-state.is-merged {
-  color: var(--pr-merged);
-}
-.ops-pr-state.is-closed {
-  color: var(--pr-closed);
-}
-.ops-pr-when {
-  flex-shrink: 0;
-  width: 3.5rem;
-  text-align: right;
-  font-size: 12px;
-  color: var(--faint);
-}
-
-/* Marks a pull request the agent opened, not a person. */
-.ops-agent-badge {
-  margin-left: 6px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--sunken);
-  border: 1px solid var(--border);
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 9px;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-}
-
-/* The same name where it is the page's subject, and copyable. */
-.ops-ticket-name {
-  padding: 1px 7px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--tracking-meta);
-  color: var(--muted);
-  white-space: nowrap;
-}
-.ops-ticket-name:hover {
-  border-color: var(--border-strong);
-  color: var(--foreground);
-}
-
-/* ---- Context menu ---- */
-.ops-menu {
-  position: fixed;
-  z-index: 50;
-  min-width: 176px;
-  padding: 4px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow:
-    0 1px 2px oklch(0.25 0.005 90 / 0.06),
-    0 8px 24px oklch(0.25 0.005 90 / 0.12);
-}
-.ops-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 10px;
-  border-radius: var(--radius);
-  font-size: var(--text-ui);
-  text-align: left;
-}
-.ops-menu-item:hover {
-  background: var(--sunken);
-}
-.ops-menu-sep {
-  height: 1px;
-  margin: 4px 6px;
-  background: var(--border);
-}
-
-.ops-input {
-  width: 100%;
-  padding: 7px 10px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  font-size: var(--text-ui);
-}
-.ops-input:focus {
-  outline: none;
-  border-color: var(--border-strong);
-}
-
-.ops-pre {
-  background: var(--sunken);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  overflow: auto;
-  max-height: 320px;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.ops-ticket-cat {
-  flex-shrink: 0;
-  padding: 1px 7px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-/* ---- People ---- */
-.ops-who {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-  font-size: 12px;
-  color: var(--muted);
-}
-.ops-who-face {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  border-radius: 999px;
-  object-fit: cover;
-  border: 1px solid var(--border);
-}
-.ops-who-face.is-lg {
-  width: 28px;
-  height: 28px;
-}
-.ops-who-blank {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--sunken);
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 600;
-}
-.ops-who-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
 }
