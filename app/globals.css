@@ -9,11 +9,14 @@
        ON THE FAR SIDE OF A LINE.
 
    Two papers: Sheet is the human's, Watch is the agent's. Wherever both meet,
-   a 1px Ink line separates them — horizontal when the axis is time (the
-   handover strip on the Overview), vertical when the axis is a list (the
-   ticket page, the op timeline), and at row scale the tint alone (the inbox's
-   watch cell). The page stays light because darkness here is *relational*:
-   the night is a place and a material, not a background.
+   a 1px line separates them — horizontal when the axis is time (the handover
+   strip on the Overview), vertical when the axis is a list (the ticket page,
+   the op timeline), and at row scale the tint alone (the inbox's watch cell).
+
+   Watch is the *elevated* surface, and elevation here means lighter plus a
+   hairline in BOTH themes — #ffffff over #f8f8f9 in the light, #19191b over
+   #111212 in the dark. The machine's work is raised off the page rather than
+   sunk into it, and it reads the same way whichever theme you are in.
 
    Scoping rule — keep the tint meaningful, and note that the paper and the
    ink are scoped differently:
@@ -28,97 +31,162 @@
    The paper is the scarcer signal. Spend it carefully or it stops meaning
    anything, and the inbox's band of tint — and the gaps in it — go with it.
 
-   THE DISPLAY FACE IS FENCED. Big Shoulders is a condensed signage face; it
-   is one careless application away from a sports broadcast. It is legal in
-   exactly five places, all of them below: .ops-eyebrow, .ops-table th,
-   .ops-title, .ops-figure, .ops-tick (plus .ops-wordmark, which is a title).
-   Do not reach for it on a button, an empty state, or a table cell.
+   THE SURFACE IS LINEAR'S, AND THE RULES ARE ITS RULES.
+
+   ONE FAMILY. Inter, everywhere, including headings — Linear's own theme sets
+     `--font-display: var(--font-regular)`, and the app ships exactly one font
+     file. There is no second face here and there must not be one. A condensed
+     signage face was tried in this slot and was unreadable.
+
+   ONE CASE. Sentence case, always. No uppercase micro-labels anywhere: an
+     exhaustive read of Linear's 535KB of product CSS turns up a single
+     uppercase utility class carrying no size, weight, tracking or colour —
+     i.e. no such style exists. Capitals destroy the word-shape a reader
+     actually parses, then need tracking to stay legible, which eats the room
+     that made them seem worth it. A group heading here is the SAME size and
+     the SAME weight as the rows beneath it, separated by space and a glyph.
+
+   ONE SIZE, mostly. 13px does nearly all the work; 15px is prose, 12 and 11
+     are metadata, 20 is a page title. No 14px and no 16px.
+
+   TRACKING IS ZERO. Negative tracking is a large-type device and only pays
+     off above ~20px. Tightening a 12px label just smears it.
+
+   HIERARCHY COMES FROM COLOUR AND SPACE, never from weight. Four tiers of ink
+     and three weights fifty units apart.
+
+   THE ACCENT IS AN EVENT. Roughly all of this app is grey. The sage shows up
+     on the logo, the focus ring, links, and the selected tint — and nowhere
+     else. Not on the active nav item, which is grey. Not on counts or badges.
    ========================================================================= */
 
 :root {
-  /* -- The two papers, the desk they lie on, and the rules between ------- */
-  --deck: oklch(0.955 0.009 258); /* page ground — cool dusk, not white */
-  --sheet: oklch(0.995 0.002 258); /* the human's paper */
-  --watch: oklch(0.915 0.014 258); /* the machine's paper */
-  --rule: oklch(0.865 0.012 258);
-  --rule-strong: oklch(0.78 0.016 258);
+  /* -- Three grounds, in Linear's relationship: the frame is DARKER than the
+        pane it holds, and elevation always means LIGHTER plus a hairline —
+        never a shadow. Getting this the usual way round is the single thing
+        that stops a dashboard reading as Linear. ------------------------- */
+  --deck: #eeeeef; /* the frame, behind everything */
+  --sheet: #f8f8f9; /* the content pane — off-white, never pure white */
+  --watch: #ffffff; /* elevated: menus, and the machine's own panels */
+  --rule: rgb(0 0 0 / 0.1);
+  --rule-strong: rgb(0 0 0 / 0.16);
+  /* A hairline that divides and a hairline that *says* something are not the
+     same value. Dashed-means-the-machine-did-not-act is drawn in this one:
+     at Rule Strong the unsigned cell was 1.45:1 and the band had no visible
+     gaps, which is the one thing the band exists to show. */
+  --rule-glyph: rgb(0 0 0 / 0.45);
 
   /* A cast shadow is not one of the remapped values — it stays dark in both
-     themes, or the thing it lifts stops sitting above the page. */
+     themes, or the thing it lifts stops sitting above the page. Layered and
+     faint: elevation here is carried by the lighter paper and the hairline. */
   --lift:
-    0 1px 2px oklch(0.24 0.014 265 / 0.08),
-    0 10px 28px oklch(0.24 0.014 265 / 0.14);
+    0 6px 18px rgb(0 0 0 / 0.02),
+    0 3px 9px rgb(0 0 0 / 0.04),
+    0 1px 1px rgb(0 0 0 / 0.04);
 
-  /* -- Ink. Tertiary is banned on Watch paper; the floor there is 2. ----- */
-  --ink: oklch(0.24 0.014 265);
-  --ink-2: oklch(0.46 0.012 265); /* 6.0:1 on Sheet */
-  --ink-3: oklch(0.585 0.01 265); /* 4.55:1 on Sheet */
+  /* -- Four tiers of ink, and hierarchy is built out of THEM, not out of
+        weight. Title is for the handful of things that are the subject of a
+        screen; base is the workhorse that ordinary UI text is set in; muted
+        is metadata; faint is placeholders and the disabled. -------------- */
+  --ink: #1b1b1b; /* title  — reserve it */
+  --ink-2: #2f2f31; /* base   — the default for body and rows */
+  --ink-3: #5b5c5e; /* muted  — metadata, timestamps, counts */
+  --ink-4: #9c9c9e; /* faint  — placeholders, absence */
 
-  /* -- Interaction tints. Ink, not paper. Pointing at a row is not the
-        agent's work, and the two must not resolve to the same value: the
-        watch cell would vanish into the row under the cursor, which is the
-        one row you are reading. Being mixes, they compose over Sheet and
-        Watch alike, so a surface never has to correct for itself. --------- */
-  --hover: color-mix(in oklab, var(--ink) 6%, transparent);
-  --picked: color-mix(in oklab, var(--ink) 11%, transparent);
+  /* -- Interaction is a neutral lightness shift and nothing else. Never the
+        accent: a coloured hover is the loudest tell of an imitation. ----- */
+  --hover: rgb(0 0 0 / 0.035);
+  --picked-neutral: rgb(0 0 0 / 0.06);
+  --picked: color-mix(in oklab, var(--accent) 12%, transparent);
 
-  /* -- Authorship. Means one thing only: a machine wrote this. ----------- */
-  --machine: oklch(0.48 0.1 262);
+  /* -- The accent is Nootles' own brand sage, and it is spent the way Linear
+        spends its indigo: on the logo, the focus ring, links, the selected
+        tint, and one primary button. Not on the active nav item, not on
+        counts, badges or chips, never as a gradient. It should appear two or
+        three times on a screen; the rest of the app is grey. ------------- */
+  --brand: #718568; /* the logo's own colour, untouched */
+  --accent: #5f7356; /* 4.9:1 — legal as text and as a ring */
+  --accent-text: #4d6047;
 
-  /* -- State. Never authorship. ------------------------------------------
-     Amber used to mean both "in progress" and "the AI wrote this"; that
-     collision is why authorship got its own hue and Ember got its job back. */
-  --live: oklch(0.53 0.13 152); /* settled and good */
-  --ember: oklch(0.6 0.14 62); /* in hand, unfinished — fill only, 4.0:1 */
-  --alarm: oklch(0.53 0.19 27); /* urgent, failed, error */
+  /* -- Authorship. The machine's work is carried by its paper, its italic and
+        its column — never by a hue. Aliased to the accent, this token put
+        sage on every scored row, every strip mark and every agent PR, which
+        is the difference between an accent that is an event and a second ink.
+        The accent is spent by hand, in the two places it is one. --------- */
+  --machine: var(--ink-2);
 
-  /* -- Pull-request states derive. Who filed it matters more here than
-        which hue GitHub paints it, so merged is plain Ink. --------------- */
+  /* -- State. Four of six ticket statuses are grey on purpose — colour marks
+        the two that want attention and everything else recedes. ---------- */
+  --live: #07753e; /* settled and good */
+  --ember: #8a6900; /* in hand, unfinished */
+  --alarm: #cf1f33; /* failed, error */
+  --urgent: #b83d06; /* the one coloured priority, and only that one */
+
+  /* -- Pull-request states. Restrained: who filed it matters more here than
+        which hue GitHub paints it. --------------------------------------- */
+  /* Draft is the quietest state, but Ink 4 is the tone of absence — as the
+     pill's text and as the whole draft glyph it sat around 2.6:1. */
   --pr-draft: var(--ink-3);
   --pr-open: var(--live);
-  --pr-merged: var(--ink);
-  --pr-closed: oklch(0.55 0.09 27); /* a decision, not an incident */
+  --pr-merged: var(--accent);
+  --pr-closed: var(--ink-3);
 
-  /* -- Type scale. Everything in rem so the app scales with browser text
-        size; the floor is 11px and nothing goes below it. ---------------- */
-  --text-meta: 0.6875rem; /* 11px — machine metadata, eyebrows, th */
-  --text-note: 0.75rem; /* 12px — timestamps, notes */
-  --text-ui: 0.8125rem; /* 13px — rows, tables, controls */
-  --text-body: 0.875rem; /* 14px — prose */
-  --text-figure: 1.5rem; /* 24px — instrument numerals */
-  --text-title: 1.75rem; /* 28px — page titles */
+  /* -- Type. One family, and a ramp that lives between 11 and 20px with 13
+        doing nearly all the work. There is deliberately no 14 and no 16: the
+        narrowness of the band is what reads as dense but calm. ----------- */
+  --text-meta: 0.6875rem; /* 11px — the floor. Badges, rare. */
+  --text-note: 0.75rem; /* 12px — dense metadata */
+  --text-ui: 0.8125rem; /* 13px — rows, tables, controls, labels: most of it */
+  --text-body: 0.9375rem; /* 15px — prose only */
+  --text-figure: 1.25rem; /* 20px — instrument numerals */
+  --text-title: 1.25rem; /* 20px — page titles */
 
-  --tracking-meta: 0.14em;
+  /* Three weights, fifty units apart. 450 rather than 400 for body is what
+     keeps 13px solid on a dark ground. */
+  --w-body: 450;
+  --w-ui: 500;
+  --w-title: 600;
 
-  --radius: 4px; /* marks */
-  --radius-lg: 8px; /* panels */
+  /* Non-retina rounds the floor up to a whole pixel, as Linear does. */
+  --radius: 4px; /* things you click */
+  --radius-lg: 8px; /* things that float */
+  --radius-pane: 12px; /* the app frame */
 
-  --head-h: 44px;
+  --head-h: 48px;
   --shell: 1440px;
 }
 
-/* The same nine values, remapped. The law inverts — in the dark the
-   machine's paper is the *raised* slab — which is the proof that authorship
-   is encoded structurally and not as a mood. Hues are unchanged. */
+@media (not (min-resolution: 192dpi)) {
+  :root {
+    --text-meta: round(up, 0.6875rem, 1px);
+  }
+}
+
+/* Linear's own dark values, and the same relationships: the frame darker than
+   the pane, the elevated surface lighter than both, borders as low-alpha
+   white, and ordinary text at base rather than pure white. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --deck: oklch(0.2 0.012 258);
-    --sheet: oklch(0.245 0.012 258);
-    --watch: oklch(0.295 0.016 258);
-    --rule: oklch(0.36 0.014 258);
-    --rule-strong: oklch(0.46 0.016 258);
-    --ink: oklch(0.94 0.006 265);
-    --ink-2: oklch(0.74 0.01 265);
-    --ink-3: oklch(0.62 0.01 265);
-    --machine: oklch(0.74 0.1 262);
-    --live: oklch(0.72 0.13 152);
-    --ember: oklch(0.76 0.13 62);
-    --alarm: oklch(0.68 0.17 27);
-    --pr-closed: oklch(0.68 0.1 27);
-    --lift:
-      0 1px 2px oklch(0 0 0 / 0.44),
-      0 10px 28px oklch(0 0 0 / 0.56);
+      color-scheme: dark;
+      --deck: #09090a;
+      --sheet: #111212;
+      --watch: #19191b;
+      --rule: rgb(255 255 255 / 0.09);
+      --rule-strong: rgb(255 255 255 / 0.14);
+      --rule-glyph: rgb(255 255 255 / 0.45);
+      --ink: #ffffff;
+      --ink-2: #e2e3e5;
+      --ink-3: #949597;
+      --ink-4: #565658;
+      --hover: rgb(255 255 255 / 0.045);
+      --picked-neutral: rgb(255 255 255 / 0.08);
+      --accent: #8fa385;
+      --accent-text: #a3b89a;
+      --live: #3fc77f;
+      --ember: #edbf0a;
+      --alarm: #ff8583;
+      --urgent: #ff7235;
+      --pr-closed: var(--ink-3);
   }
 }
 
@@ -130,23 +198,26 @@
 }
 
 :root[data-theme="dark"] {
-  color-scheme: dark;
-  --deck: oklch(0.2 0.012 258);
-  --sheet: oklch(0.245 0.012 258);
-  --watch: oklch(0.295 0.016 258);
-  --rule: oklch(0.36 0.014 258);
-  --rule-strong: oklch(0.46 0.016 258);
-  --ink: oklch(0.94 0.006 265);
-  --ink-2: oklch(0.74 0.01 265);
-  --ink-3: oklch(0.62 0.01 265);
-  --machine: oklch(0.74 0.1 262);
-  --live: oklch(0.72 0.13 152);
-  --ember: oklch(0.76 0.13 62);
-  --alarm: oklch(0.68 0.17 27);
-  --pr-closed: oklch(0.68 0.1 27);
-  --lift:
-    0 1px 2px oklch(0 0 0 / 0.44),
-    0 10px 28px oklch(0 0 0 / 0.56);
+    color-scheme: dark;
+    --deck: #09090a;
+    --sheet: #111212;
+    --watch: #19191b;
+    --rule: rgb(255 255 255 / 0.09);
+    --rule-strong: rgb(255 255 255 / 0.14);
+    --rule-glyph: rgb(255 255 255 / 0.45);
+    --ink: #ffffff;
+    --ink-2: #e2e3e5;
+    --ink-3: #949597;
+    --ink-4: #565658;
+    --hover: rgb(255 255 255 / 0.045);
+    --picked-neutral: rgb(255 255 255 / 0.08);
+    --accent: #8fa385;
+    --accent-text: #a3b89a;
+    --live: #3fc77f;
+    --ember: #edbf0a;
+    --alarm: #ff8583;
+    --urgent: #ff7235;
+    --pr-closed: var(--ink-3);
 }
 
 /* `inline` is load-bearing: it inlines the value into the utility instead of
@@ -161,15 +232,22 @@
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
   --color-hover: var(--hover);
+  --color-accent: var(--accent);
+  --color-brand: var(--brand);
   --color-machine: var(--machine);
   --color-live: var(--live);
   --color-ember: var(--ember);
   --color-alarm: var(--alarm);
+  --color-urgent: var(--urgent);
 
-  --font-display: var(--font-big-shoulders);
-  --font-sans: var(--font-public-sans);
-  --font-mono: var(--font-spline-mono);
+  /* One family for the whole application, headings included. `--font-display`
+     exists only so nothing has to special-case a heading; it is the body face
+     on purpose, exactly as Linear's own theme declares it. */
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-inter);
+  --font-mono: var(--font-code);
 }
 
 /* Both branches: the attribute wins where it is set, the media query is the
@@ -186,28 +264,39 @@
 }
 
 @layer base {
+  :root {
+    /* Code, and only code. Metadata and ids are set in Inter with tabular
+       figures instead — a monospace face for a ticket number is a tell. */
+    --font-code: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas,
+      "Liberation Mono", monospace;
+  }
   html {
     color-scheme: light dark;
   }
   body {
     background: var(--deck);
-    color: var(--ink);
-    font-family: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
-    font-size: var(--text-body);
+    /* Base, not title. Setting every word at full strength is what makes an
+       imitation look harsh and flat; the four tiers are the hierarchy. */
+    color: var(--ink-2);
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    font-size: var(--text-ui);
+    font-weight: var(--w-body);
+    font-feature-settings: "ss03";
+    letter-spacing: 0;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* The stylesheet used to have no focus rules at all, and killed the input
-     outline outright. One ring, hue-neutral on purpose so it never reads as
-     "machine". */
+  /* A 1px ring in the accent, not a 2px outline — it sits inside the control's
+     own edge instead of pushing a halo out into the row beside it. */
   :focus-visible {
-    outline: 2px solid var(--ink);
-    outline-offset: 2px;
-    border-radius: 2px;
+    outline: none;
+    box-shadow: 0 0 0 1px var(--accent);
+    border-radius: var(--radius);
   }
 
   ::selection {
-    background: color-mix(in oklab, var(--machine) 22%, transparent);
+    background: color-mix(in oklab, var(--accent) 26%, transparent);
   }
 }
 
@@ -221,6 +310,22 @@
     margin-inline: auto;
   }
 
+  /* The content pane: a rounded card on the darker frame. Linear insets it by
+     8px with a 12px radius and a hairline, and lets the frame show around all
+     four edges. */
+  .ops-pane {
+    min-height: calc(100vh - 1rem);
+    background: var(--sheet);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-pane);
+    overflow: clip;
+  }
+  @media (min-width: 640px) {
+    .ops-pane {
+      min-height: calc(100vh - 1.5rem);
+    }
+  }
+
   .ops-head {
     position: sticky;
     top: 0;
@@ -229,44 +334,36 @@
     background: var(--sheet);
     border-bottom: 1px solid var(--rule);
   }
-
-  .ops-wordmark {
-    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
-    font-weight: 600;
-    font-size: 0.9375rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    font-variation-settings: "opsz" 16;
-    white-space: nowrap;
+  @supports (backdrop-filter: blur(1px)) {
+    .ops-head {
+      background: color-mix(in oklab, var(--sheet) 82%, transparent);
+      backdrop-filter: saturate(1.4) blur(12px);
+    }
   }
 
-  /* The active item is signed, not filled: a 2px Ink underline flush to the
-     header's own bottom border. */
+
+  /* The active item is a neutral fill and full-strength ink — never the
+     accent, which is the loudest tell of an imitation. */
   .ops-nav-link {
-    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    height: var(--head-h);
-    padding-inline: 8px;
+    height: 28px;
+    padding-inline: 9px;
+    border-radius: var(--radius);
     font-size: var(--text-ui);
-    color: var(--ink-2);
+    font-weight: var(--w-ui);
+    color: var(--ink-3);
     white-space: nowrap;
   }
   .ops-nav-link:hover {
-    color: var(--ink);
+    color: var(--ink-2);
+    background: var(--hover);
   }
+  /* Grey, deliberately. Not the accent. */
   .ops-nav-link.is-on {
     color: var(--ink);
-    font-weight: 500;
-  }
-  .ops-nav-link.is-on::after {
-    content: "";
-    position: absolute;
-    inset-inline: 6px;
-    bottom: -1px;
-    height: 2px;
-    background: var(--ink);
+    background: var(--picked-neutral);
   }
 
   .ops-badge {
@@ -276,10 +373,10 @@
     min-width: 17px;
     height: 15px;
     padding-inline: 4px;
-    border-radius: 999px;
-    background: var(--ink);
-    color: var(--sheet);
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    border-radius: var(--radius);
+    background: var(--picked-neutral);
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-meta);
     font-variant-numeric: tabular-nums;
     line-height: 1;
@@ -291,9 +388,8 @@
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-meta);
-    letter-spacing: 0.02em;
     color: var(--ink-2);
     white-space: nowrap;
   }
@@ -352,74 +448,69 @@
   }
   /* While it scrolls, the nav is a scroll container in both axes and it is
      exactly as tall as a link — so anything drawn outside a link's own box is
-     clipped away rather than scrolled to. Both marks come inside for the
-     duration: the section's underline and the focus ring. */
+     clipped away rather than scrolled to. The focus ring comes inside for the
+     duration. */
   @media (width < 721px) {
-    .ops-nav-link.is-on::after {
-      bottom: 0;
-    }
     .ops-nav-link:focus-visible {
-      outline-offset: -2px;
+      box-shadow: inset 0 0 0 1px var(--accent);
     }
   }
 
   /* ==== Type ============================================================= */
+  /* A section's name. Same size and weight as the rows beneath it, sentence
+     case, full-strength ink — it is separated by space and by what sits next
+     to it, not by shouting. */
   .ops-eyebrow {
-    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
-    font-weight: 600;
-    font-size: var(--text-meta);
-    font-variation-settings: "opsz" 12;
-    letter-spacing: var(--tracking-meta);
-    text-transform: uppercase;
+    font-size: var(--text-ui);
+    font-weight: var(--w-ui);
+    letter-spacing: 0;
     color: var(--ink-2);
   }
 
   .ops-title {
-    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
-    font-weight: 600;
     font-size: var(--text-title);
-    font-variation-settings: "opsz" 36;
-    letter-spacing: 0.01em;
-    line-height: 1.1;
+    font-weight: var(--w-title);
+    /* The one place negative tracking earns its keep: 20px and above. */
+    letter-spacing: -0.012em;
+    line-height: 1.33;
     color: var(--ink);
   }
 
   .ops-figure {
-    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
-    font-weight: 500;
     font-size: var(--text-figure);
-    font-variation-settings: "opsz" 48;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.15;
+    font-weight: var(--w-title);
+    letter-spacing: -0.012em;
+    font-variant-numeric: tabular-nums lining-nums;
+    line-height: 1.33;
     color: var(--ink);
   }
 
   .ops-tick {
-    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
-    font-weight: 600;
     font-size: var(--text-meta);
-    font-variation-settings: "opsz" 12;
-    letter-spacing: var(--tracking-meta);
-    color: var(--ink-2);
+    font-weight: var(--w-ui);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    color: var(--ink-3);
   }
 
   /* Machine metadata: always mono, always abbreviated. */
+  /* Ids, counts, scores, timestamps. Inter with tabular figures rather than a
+     monospace face — the columns line up either way, and a mono ticket number
+     is the tell that gives an imitation away. */
   .ops-mono {
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
-    font-size: var(--text-meta);
-    letter-spacing: 0.02em;
-    font-variant-numeric: tabular-nums;
+    font-size: var(--text-note);
+    font-variant-numeric: tabular-nums lining-nums;
+    color: var(--ink-3);
   }
 
   /* Machine prose. The italic is load-bearing — it makes authorship legible
      with no colour, no badge and no box, so it survives greyscale, a bad
      panel, and forced-colors. */
   .ops-machine-prose {
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
     font-style: italic;
     font-size: var(--text-ui);
     line-height: 1.6;
-    color: var(--machine);
+    color: var(--ink-2);
   }
 
   .ops-note {
@@ -452,14 +543,17 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 14px;
+    /* 12px, like the row, the cell and the pull request — a panel heading
+       that does not start where its rows start gives the card two left
+       edges. */
+    padding: 9px 12px;
     border-bottom: 1px solid var(--rule);
   }
 
   /* The unsigned line: where the night shift never got to. Dashed means one
      thing across the whole app — the machine did not act here. */
   .ops-unsigned {
-    border: 1px dashed var(--rule-strong);
+    border: 1px dashed var(--rule-glyph);
     border-radius: var(--radius-lg);
     padding: 14px;
     color: var(--ink-2);
@@ -496,13 +590,10 @@
     padding: 7px 12px;
     background: var(--sheet);
     border-bottom: 1px solid var(--rule);
-    font-family: var(--font-big-shoulders), ui-sans-serif, sans-serif;
-    font-weight: 600;
-    font-size: var(--text-meta);
-    font-variation-settings: "opsz" 12;
-    letter-spacing: var(--tracking-meta);
-    text-transform: uppercase;
-    color: var(--ink-2);
+    font-weight: var(--w-ui);
+    font-size: var(--text-note);
+    letter-spacing: 0;
+    color: var(--ink-3);
     white-space: nowrap;
   }
   .ops-watch .ops-table th {
@@ -617,8 +708,8 @@
     border: 1px solid var(--rule);
     border-radius: var(--radius);
     padding: 10px;
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
-    font-size: var(--text-meta);
+    font-family: var(--font-code);
+    font-size: var(--text-note);
     line-height: 1.6;
     color: var(--ink-2);
     overflow: auto;
@@ -633,7 +724,10 @@
     z-index: 50;
     min-width: 190px;
     padding: 4px;
-    background: var(--sheet);
+    /* Elevated, so: lighter than the page plus a hairline. On Sheet it was
+       the same value as the pane behind it and had only its shadow to stand
+       on, which is the un-Linear way round. */
+    background: var(--watch);
     border: 1px solid var(--rule-strong);
     border-radius: var(--radius-lg);
     box-shadow: var(--lift);
@@ -725,14 +819,18 @@
   .ops-row {
     position: relative;
     display: grid;
+    /* The category track holds the longest label ("Canvas & diagrams",
+       109.9px at 12px) and the age track holds "59m ago" (49.9px) — the wide
+       step is the only place either word is drawn in full, so it fits or
+       there was no reason to draw it. */
     grid-template-columns:
       10px 14px 14px 52px 34px minmax(0, 1fr)
-      34px 96px 84px 146px 48px;
+      34px 112px 84px 146px 52px;
     align-items: center;
     gap: 8px;
-    padding: 0.3125rem 0.625rem;
+    padding: 0.4375rem 0.75rem;
     font-size: var(--text-ui);
-    line-height: 1.125rem;
+    line-height: 1.25rem;
     border-bottom: 1px solid var(--rule);
   }
   /* Whether the rows are direct children or wrapped in list items. */
@@ -784,7 +882,7 @@
   }
 
   .ops-id {
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-meta);
     font-variant-numeric: tabular-nums;
     color: var(--ink-3);
@@ -792,9 +890,8 @@
   }
 
   .ops-kind {
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-meta);
-    letter-spacing: 0.02em;
     color: var(--ink-3);
   }
 
@@ -824,9 +921,8 @@
   }
   .ops-cat-code {
     display: none;
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-meta);
-    letter-spacing: 0.02em;
   }
 
   .ops-age {
@@ -850,7 +946,7 @@
     padding-inline: 6px;
     border-radius: var(--radius);
     background: var(--watch);
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-meta);
     font-variant-numeric: tabular-nums;
     color: var(--machine);
@@ -858,7 +954,7 @@
   /* Never handed to the agent — an outline with nothing in it. */
   .ops-cell.is-unsigned {
     background: transparent;
-    border: 1px dashed var(--rule-strong);
+    border: 1px dashed var(--rule-glyph);
   }
   /* A human put it out of the machine's reach: a mark made inside the
      machine's own column, at zero cost in width. */
@@ -890,9 +986,12 @@
   .ops-score.is-under {
     color: var(--ink-2);
   }
+  /* One of the two places the accent is spent by hand: a score clearing
+     tonight's bar is the event the morning read is about. The text is the
+     darker cut — the accent on its own 20% tint is 3.97:1 in the light. */
   .ops-score.is-over {
-    background: color-mix(in oklab, var(--machine) 20%, transparent);
-    color: var(--machine);
+    background: color-mix(in oklab, var(--accent) 20%, transparent);
+    color: var(--accent-text);
     font-weight: 600;
   }
   .ops-score.is-failed {
@@ -908,7 +1007,7 @@
     border: 1px solid var(--machine);
   }
   .ops-outcome.is-declined {
-    border-color: var(--rule-strong);
+    border-color: var(--rule-glyph);
   }
   .ops-outcome.is-failed {
     background: var(--alarm);
@@ -930,7 +1029,8 @@
     align-items: center;
     gap: 10px;
     height: 24px;
-    padding-inline: 0.625rem;
+    /* Flush with the rows it heads: the unread dot below it starts at 12px. */
+    padding-inline: 0.75rem;
     background: var(--sheet);
     border-bottom: 1px solid var(--rule);
   }
@@ -950,7 +1050,7 @@
     .ops-row {
       grid-template-columns:
         10px 14px 14px 52px 34px minmax(0, 1fr)
-        34px 34px 84px 20px 48px;
+        34px 34px 84px 20px 52px;
     }
     /* Off the screen, not out of the tree — the three-letter code is the
        abbreviation, and the word it stands for has to stay readable to
@@ -985,7 +1085,7 @@
     .ops-row {
       grid-template-columns:
         10px 14px 14px 52px minmax(0, 1fr)
-        84px 20px 44px;
+        84px 20px 52px;
     }
     .ops-row > .ops-kind,
     .ops-row > .ops-carries,
@@ -995,7 +1095,7 @@
   }
   @container rows (max-width: 620px) {
     .ops-row {
-      grid-template-columns: 10px 14px 14px minmax(0, 1fr) 84px 44px;
+      grid-template-columns: 10px 14px 14px minmax(0, 1fr) 84px 52px;
       grid-template-areas:
         "dot pri sta id  watch age"
         "ttl ttl ttl ttl ttl   who";
@@ -1084,9 +1184,10 @@
   .ops-strip-report.is-unread::after {
     opacity: 1;
   }
-  .ops-strip-report:hover,
-  .ops-strip-report:focus-visible {
-    background: var(--machine);
+  /* A mark already at full ink cannot get darker, so hover is a neutral halo
+     rather than a hue. Focus is left to the ring in the base layer. */
+  .ops-strip-report:hover {
+    box-shadow: 0 0 0 3px var(--rule-strong);
   }
   .ops-strip-run {
     position: absolute;
@@ -1135,9 +1236,8 @@
   .ops-strip-label {
     position: absolute;
     top: 92px;
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-meta);
-    letter-spacing: 0.02em;
     color: var(--machine);
     white-space: nowrap;
   }
@@ -1170,7 +1270,10 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
-  @media (min-width: 1100px) {
+  /* Eight across only once the longest label fits one: "Suggestions shown" is
+     122px at 13px, and a cell holds its width minus 25px of padding and rule.
+     At 1100 that left 105px and the label was drawn "Suggestions sho…". */
+  @media (min-width: 1280px) {
     .ops-instruments {
       grid-template-columns: repeat(8, minmax(0, 1fr));
     }
@@ -1199,12 +1302,12 @@
       border-top: none;
     }
   }
-  @media (640px <= width < 1100px) {
+  @media (640px <= width < 1280px) {
     .ops-instrument:nth-child(4n + 1) {
       border-left: none;
     }
   }
-  @media (width >= 1100px) {
+  @media (width >= 1280px) {
     .ops-instrument {
       border-top: none;
     }
@@ -1244,7 +1347,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-meta);
     color: var(--ink-2);
   }
@@ -1269,9 +1372,10 @@
   .ops-pr:hover {
     background: color-mix(in oklab, var(--ink) 5%, transparent);
   }
-  /* A 3px edge in the machine's ink: the agent filed this one. */
+  /* A 3px edge, muted: the agent filed this one. Not the accent — a coloured
+     card edge is the one use the accent is banned from outright. */
   .ops-pr.is-agent {
-    box-shadow: inset 3px 0 0 var(--machine);
+    box-shadow: inset 3px 0 0 var(--ink-3);
   }
   .ops-pr-title {
     flex: 1;
@@ -1279,7 +1383,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-ui);
     color: var(--ink);
   }
@@ -1293,9 +1397,8 @@
     padding: 1px 0;
     border-radius: 999px;
     border: 1px solid currentColor;
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
     font-size: var(--text-meta);
-    letter-spacing: 0.02em;
   }
   .ops-pr-state.is-draft {
     color: var(--pr-draft);
@@ -1322,8 +1425,8 @@
     display: grid;
     grid-template-columns: 1fr 1px 1fr;
     column-gap: 12px;
-    font-family: var(--font-spline-mono), ui-monospace, monospace;
-    font-size: var(--text-meta);
+    font-family: var(--font-code);
+    font-size: var(--text-note);
     line-height: 1.7;
   }
   .ops-ops-rule {

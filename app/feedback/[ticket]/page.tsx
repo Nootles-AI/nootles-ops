@@ -30,7 +30,7 @@ import { Who } from "../../components/Who";
  * ONE TICKET — and the one page where the law is drawn at full size.
  *
  * The person's report lies on the left, the night's work on the right, and a
- * 1px Ink rule runs between them. Below `lg` the columns stack, human first,
+ * 1px rule runs between them. Below `lg` the columns stack, human first,
  * and the same rule lies down flat. Nothing the coding agent did is ever drawn
  * on the human's paper, and nothing a human did is ever drawn on the
  * machine's — which is why the duplicate link changes paper depending on who
@@ -284,7 +284,10 @@ export default function TicketPage() {
       </div>
 
       {/* THE LINE. Vertical while the axis is a list; flat once the columns
-          stack, which is the same rule seen from the other side. */}
+          stack, which is the same rule seen from the other side. A hairline,
+          not Ink: this one runs the full height of a page that can be thousands
+          of pixels long, and the gutters either side already carry the split.
+          The strip's short hero line stays the one full-strength rule. */}
       <div className="grid gap-4 lg:grid-cols-[1fr_1px_1fr] lg:gap-0">
         <div className="min-w-0 space-y-4 lg:pr-6">
           <Panel title="The report">
@@ -361,7 +364,7 @@ export default function TicketPage() {
           </section>
         </div>
 
-        <div className="h-px bg-ink lg:h-auto" aria-hidden />
+        <div className="h-px bg-rule-strong lg:h-auto" aria-hidden />
 
         <div className="min-w-0 space-y-4 lg:pl-6">
           {untouched ? (

@@ -31,7 +31,7 @@ export function StatusIcon({ status }: { status: TicketStatus }) {
             cy="7"
             r="5.25"
             fill="none"
-            stroke="var(--ink-2)"
+            stroke="var(--ink-3)"
             strokeWidth="1.5"
           />
           <circle cx="7" cy="7" r="2.25" fill="var(--ink)" />
@@ -45,7 +45,7 @@ export function StatusIcon({ status }: { status: TicketStatus }) {
             cy="7"
             r="5.25"
             fill="none"
-            stroke="var(--ink-2)"
+            stroke="var(--ink-3)"
             strokeWidth="1.5"
           />
         </svg>
@@ -65,6 +65,9 @@ export function StatusIcon({ status }: { status: TicketStatus }) {
         </svg>
       );
     // A PR exists but nobody has merged it: the ring closes, the centre waits.
+    // Grey, and this glyph is drawn in every row — colour marks the two states
+    // that want attention, in hand and settled, and this is neither. The
+    // waiting centre is what separates it from `seen`; it needs no hue.
     case "pr_filed":
       return (
         <svg {...common}>
@@ -73,16 +76,16 @@ export function StatusIcon({ status }: { status: TicketStatus }) {
             cy="7"
             r="5.25"
             fill="none"
-            stroke="var(--live)"
+            stroke="var(--ink-3)"
             strokeWidth="1.5"
           />
-          <circle cx="7" cy="7" r="2.25" fill="var(--live)" />
+          <circle cx="7" cy="7" r="2.25" fill="var(--ink-3)" />
         </svg>
       );
     case "done":
       return (
         <svg {...common}>
-          <circle cx="7" cy="7" r="6" fill="var(--live)" />
+          <circle cx="7" cy="7" r="6" fill="var(--accent)" />
           <path
             d="M4.4 7.2 6.2 9l3.4-3.8"
             fill="none"
@@ -96,6 +99,10 @@ export function StatusIcon({ status }: { status: TicketStatus }) {
     case "declined":
       return (
         <svg {...common}>
+          {/* Muted, not faint: Ink 4 is the placeholder tier and lands at
+              2.6:1 on either paper, so both the disc and the cross knocked
+              out of it fall under the 3:1 a glyph has to clear. This is the
+              one status an operator must not mistake for `done`. */}
           <circle cx="7" cy="7" r="6" fill="var(--ink-3)" />
           <path
             d="M4.8 4.8l4.4 4.4M9.2 4.8l-4.4 4.4"

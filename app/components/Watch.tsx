@@ -42,8 +42,10 @@ export function WatchReadout() {
       }
     >
       {/* The word survives below sm even when the label does not: without it a
-          narrow header leaves this link with no name but its href. */}
-      <span className="ops-eyebrow sr-only sm:not-sr-only sm:inline">
+          narrow header leaves this link with no name but its href. Not the
+          section-heading class — a label set larger than its own value inverts
+          the hierarchy, so it takes the readout's size and only the UI weight. */}
+      <span className="font-medium sr-only sm:not-sr-only sm:inline">
         Watch
       </span>
       <span className={`ops-pip ${pip}`} aria-hidden />

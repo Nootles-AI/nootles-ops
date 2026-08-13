@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Big_Shoulders, Public_Sans, Spline_Sans_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/lib/session";
 import { OpsProvider } from "@/lib/ops";
@@ -10,40 +10,21 @@ import { Guard } from "./components/Guard";
 import { NavLink } from "./components/NavLink";
 import { SignOut } from "./components/SignOut";
 import { THEME_SCRIPT, ThemeToggle } from "./components/Theme";
+import { Wordmark } from "./components/Wordmark";
 import { WatchReadout } from "./components/Watch";
 
 /**
- * Three faces, three jobs. Big Shoulders is the equipment label — condensed
- * enough to fit a real word above a 34px column — and it is fenced to
- * eyebrows, table headings, page titles, hour ticks and the strip's numerals
- * (see globals.css). Public Sans is the record-keeping hand: the plainest
- * grotesque available, chosen to disappear under two hundred rows. Spline
- * Sans Mono is here for its italic, which is what lets the agent's prose be
- * unmistakably machine-written without a colour, a badge or a box.
+ * One family, for everything, headings included — which is what Linear does:
+ * its theme literally sets `--font-display: var(--font-regular)` and the app
+ * preloads a single font file. `ss03` is the stylistic set Linear turns on
+ * globally; it is what makes Inter's punctuation and figures sit right at
+ * 13px. Code keeps a system monospace, declared in globals.css.
  */
-const display = Big_Shoulders({
+const inter = Inter({
   subsets: ["latin"],
   axes: ["opsz"],
   display: "swap",
-  variable: "--font-big-shoulders",
-  // Next has no metric overrides for this family, so it cannot synthesise a
-  // matched fallback; a condensed stack keeps the swap from reflowing the
-  // eyebrows and table headings it sits in.
-  fallback: ["Arial Narrow", "Helvetica Neue Condensed", "ui-sans-serif"],
-});
-
-const body = Public_Sans({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  display: "swap",
-  variable: "--font-public-sans",
-});
-
-const mono = Spline_Sans_Mono({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  display: "swap",
-  variable: "--font-spline-mono",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -53,43 +34,49 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${display.variable} ${body.variable} ${mono.variable}`}
-      suppressHydrationWarning
-    >
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body className="min-h-screen">
+      {/* The frame is the darker surface and the content is a rounded pane
+          floating on it. That one relationship — inset gutter, 12px radius,
+          hairline border, frame colour showing around all four edges — does
+          more for the resemblance than any single value in the palette. */}
+      <body className="min-h-screen bg-deck">
         <ConvexClientProvider>
           <SessionProvider>
             <OpsProvider>
-              <header className="ops-head">
-                <div className="ops-shell flex h-full items-center gap-4">
-                  <span className="ops-wordmark shrink-0">
-                    Nootles <span className="text-ink-3">Ops</span>
-                  </span>
-                  <nav className="ops-nav" aria-label="Sections">
-                    <NavLink href="/">Overview</NavLink>
-                    <FeedbackLink />
-                    <NavLink href="/users">Users</NavLink>
-                    <NavLink href="/suggestions">Suggestions</NavLink>
-                    <NavLink href="/calls">AI calls</NavLink>
-                    <NavLink href="/agent">Agent</NavLink>
-                  </nav>
-                  <div className="ml-auto flex shrink-0 items-center gap-3">
-                    <WatchReadout />
-                    <ThemeToggle />
-                    <SignOut />
-                  </div>
+              <div className="min-h-screen p-2 sm:p-3">
+                <div className="ops-pane">
+                  <header className="ops-head">
+                    <div className="ops-shell flex h-full items-center gap-3">
+                      <nav className="ops-nav" aria-label="Sections">
+                        <NavLink href="/">Overview</NavLink>
+                        <FeedbackLink />
+                        <NavLink href="/users">Users</NavLink>
+                        <NavLink href="/suggestions">Suggestions</NavLink>
+                        <NavLink href="/calls">AI calls</NavLink>
+                        <NavLink href="/agent">Agent</NavLink>
+                      </nav>
+                      <div className="ml-auto flex shrink-0 items-center gap-2">
+                        <WatchReadout />
+                        <ThemeToggle />
+                        <SignOut />
+                        <span
+                          className="mx-1 h-4 w-px bg-rule sm:mx-2"
+                          aria-hidden
+                        />
+                        <Wordmark />
+                      </div>
+                    </div>
+                  </header>
+                  <main className="ops-shell py-6">
+                    <Guard>
+                      <DirectoryProvider>{children}</DirectoryProvider>
+                    </Guard>
+                  </main>
                 </div>
-              </header>
-              <main className="ops-shell py-6">
-                <Guard>
-                  <DirectoryProvider>{children}</DirectoryProvider>
-                </Guard>
-              </main>
+              </div>
             </OpsProvider>
           </SessionProvider>
         </ConvexClientProvider>

@@ -11,6 +11,11 @@ const KEY = "nootles-ops:theme";
  *
  * The mark is those two papers, one over the other. A sun and a moon would
  * say nothing this dashboard means.
+ *
+ * Which paper is raised is said by filling the front square, not by dimming
+ * it: opacity takes the 1.3px stroke down with the fill, and in the light the
+ * whole state cue composites to 1.5:1 against the sheet. Filled-versus-hollow
+ * is the vocabulary the row's carries and outcome squares already speak.
  */
 export function ThemeToggle() {
   const [dark, setDark] = useState<boolean | null>(null);
@@ -63,8 +68,7 @@ export function ThemeToggle() {
           width="8"
           height="8"
           rx="1.5"
-          fill="currentColor"
-          opacity={dark ? 1 : 0.28}
+          fill={dark ? "currentColor" : "none"}
           stroke="currentColor"
           strokeWidth="1.3"
         />

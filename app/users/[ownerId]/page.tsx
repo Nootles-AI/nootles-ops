@@ -277,7 +277,13 @@ export default function UserDetail() {
                         {KIND_WORDS[r.kind].short}
                       </span>
                       <span className="min-w-0 flex-1 truncate">{r.text}</span>
-                      <span className="ops-age">{when(r.createdAt)}</span>
+                      {/* Not .ops-age: that class gives its slot up to the
+                          inbox row's kebab, and goes to opacity 0 outright on
+                          a coarse pointer. There is no kebab here, so the
+                          date is drawn the way the Projects list draws it. */}
+                      <span className="ops-note shrink-0">
+                        {when(r.createdAt)}
+                      </span>
                     </Link>
                   </li>
                 ))}
@@ -303,8 +309,11 @@ function BackLink() {
 }
 
 /**
- * One milestone. `is-on` for the ones reached, plain for the ones not — the
- * row only reads as progress if both states are drawn with equal weight.
+ * One milestone. Reached and not-reached are separated by ink alone, so the
+ * row still reads as progress with both states drawn. Not `is-on`: that tint
+ * marks the one option picked out of a control group, and a finished account
+ * lights six of these at once — six sage chips in a row under the title would
+ * spend the accent on something nobody chose.
  * A use case is free text, so the label truncates rather than pushing the
  * page sideways on a phone.
  */
@@ -318,7 +327,10 @@ function Chip({
   children: React.ReactNode;
 }) {
   return (
-    <li className={`ops-chip max-w-full${on ? " is-on" : ""}`} title={title}>
+    <li
+      className={`ops-chip max-w-full ${on ? "border-rule-strong text-ink" : "text-ink-3"}`}
+      title={title}
+    >
       <span className="min-w-0 truncate">{children}</span>
     </li>
   );

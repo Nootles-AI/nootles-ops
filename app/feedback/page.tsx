@@ -366,7 +366,10 @@ export default function FeedbackInbox() {
               className="ops-mono self-center pl-1 text-ink-3"
               title="Tonight the agent will not pick up a ticket scoring below this."
             >
-              RUBRIC ≥ {config ? config.scoreThreshold : "—"}
+              {/* Spelt out rather than set with ≥: U+2265 is outside the latin
+                  subset the one font ships, so the operator would fall back to
+                  a second face for a single glyph. */}
+              Rubric threshold {config ? config.scoreThreshold : "—"}
             </span>
           </div>
         </div>
@@ -516,9 +519,9 @@ function GroupLegend({ group, night }: { group: Group; night: Night | null }) {
   // paper. Elsewhere the legend is a plain human heading.
   const note = isNight
     ? night &&
-      `${clock(night.from)}–${night.run.finishedAt ? clock(night.to) : "NOW"} · READ ${night.run.ticketsRead} · SCORED ${night.run.scored} · FILED ${night.run.prsFiled}`
+      `${clock(night.from)}–${night.run.finishedAt ? clock(night.to) : "now"} · read ${night.run.ticketsRead} · scored ${night.run.scored} · filed ${night.run.prsFiled}`
     : group === "today" && night?.run.finishedAt
-      ? `SINCE ${clock(night.to)}`
+      ? `since ${clock(night.to)}`
       : null;
 
   return (

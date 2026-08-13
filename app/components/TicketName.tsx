@@ -23,7 +23,7 @@ export function TicketName({ number }: { number: number }) {
 
   return (
     <button
-      className="ops-chip font-mono text-[length:var(--text-meta)] tracking-[0.02em] tabular-nums"
+      className="ops-chip text-[length:var(--text-meta)] tabular-nums"
       title={`Copy "${name}_" for a PR title`}
       onClick={() => {
         void navigator.clipboard

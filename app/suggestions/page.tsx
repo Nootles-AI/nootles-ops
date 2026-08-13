@@ -238,7 +238,9 @@ function FunnelRow({
   const rule = foot ? " border-t border-rule-strong border-b-0" : "";
   return (
     <tr>
-      <td className={`ops-mono text-ink${rule}${foot ? " font-semibold" : ""}`}>
+      {/* The totals line is marked by its rule and by full-strength ink — a
+          heavier weight on top of both would be a third say of the same thing. */}
+      <td className={`ops-mono text-ink${rule}`}>
         {label}
       </td>
       <td className={`num${rule}`}>{k.shown.toLocaleString()}</td>

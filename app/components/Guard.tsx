@@ -59,10 +59,17 @@ function Login() {
       onSubmit={submit}
       className="ops-sheet mx-auto mt-24 max-w-[19rem] p-6"
     >
-      <h1 className="ops-eyebrow">The watch log</h1>
-      <div className="mt-2 mb-4 h-px bg-ink" aria-hidden />
-      <p className="ops-note mb-4">
-        Two hands write in this book. Sign in to read it.
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logos/Logo Vertical - Brand Color.svg"
+        alt="Nootles"
+        width={112}
+        height={99}
+        className="mx-auto mb-5 h-[76px] w-auto"
+      />
+      <h1 className="ops-eyebrow text-center">Operator sign-in</h1>
+      <p className="ops-note mb-4 text-center">
+        Two hands write in this log. Sign in to read it.
       </p>
       <div className="space-y-2">
         <input
