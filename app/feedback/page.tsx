@@ -453,7 +453,14 @@ export default function FeedbackInbox() {
    the run's own counters — in the page the operator actually lives in.
    ======================================================================== */
 
-type Group = "today" | "night" | "earlier";
+/**
+ * Only the two bands that mean something get a name. Everything older is just
+ * the rest of the list: a legend reading "Earlier" marks the absence of a
+ * boundary rather than a boundary, and when nothing arrived overnight it is
+ * the only band there is — a label pinned to the top of the inbox saying
+ * nothing at all.
+ */
+type Group = "today" | "night";
 
 type Night = { from: number; to: number; run: AgentRun };
 
@@ -470,7 +477,16 @@ function nightWindow(run: AgentRun | undefined): Night | null {
   // with it — swallowing days of rows into one band of the machine's paper.
   const anchor = run.finishedAt ?? run.startedAt;
   if (Date.now() - anchor > 24 * 3600_000) return null;
-  return { from: run.startedAt, to: run.finishedAt ?? Date.now(), run };
+  // A run that died mid-night keeps `status: "running"` and no `finishedAt`
+  // for good. Ending its band at `now` would make the band grow all day and
+  // put every ticket filed since under the machine's paper — and, because the
+  // "today" cut is `>= to`, would leave no ticket able to reach it at all. So
+  // an unfinished run gets a bounded night rather than an open one.
+  const OPEN_RUN_CEILING = 4 * 3600_000;
+  const to =
+    run.finishedAt ??
+    Math.min(Date.now(), run.startedAt + OPEN_RUN_CEILING);
+  return { from: run.startedAt, to, run };
 }
 
 function startOfToday(): number {
@@ -480,25 +496,33 @@ function startOfToday(): number {
 }
 
 /**
- * Rows arrive newest-first, so the groups are three descending cuts and never
- * interleave. Empty groups draw no legend — an unsigned band is a claim, and
- * this one would be false.
+ * Two cuts, and only two get a name: today, and the night just gone. Anything
+ * older is the rest of the list and is drawn without a legend — "Earlier"
+ * names the absence of a boundary rather than a boundary, and on a quiet night
+ * it was the only band there was.
+ *
+ * A band may appear more than once: `createdAt` is the deployment's stamp and
+ * need not agree with the order the page arrives in, so the sections are keyed
+ * by position rather than by name.
  */
 function splitByNight(
   rows: FeedbackListRow[],
   night: Night | null,
 ): { group: Group | null; rows: FeedbackListRow[] }[] {
   const dawn = startOfToday();
-  const of = (at: number): Group =>
+  // The later of the two edges: a nightly job that finishes at 23:40 would
+  // otherwise file 23:50's ticket under "Today · since 23:40" while the row's
+  // own age cell reads "8h ago".
+  const of = (at: number): Group | null =>
     night
-      ? at >= night.to
+      ? at >= Math.max(night.to, dawn)
         ? "today"
         : at >= night.from
           ? "night"
-          : "earlier"
+          : null
       : at >= dawn
         ? "today"
-        : "earlier";
+        : null;
 
   const out: { group: Group | null; rows: FeedbackListRow[] }[] = [];
   for (const row of rows) {
@@ -512,15 +536,14 @@ function splitByNight(
 
 function GroupLegend({ group, night }: { group: Group; night: Night | null }) {
   const isNight = group === "night";
-  const label =
-    group === "today" ? "Today" : group === "night" ? "Overnight" : "Earlier";
+  const label = group === "today" ? "Today" : "Overnight";
 
   // What the machine did, in the machine's own numbers, on the machine's
   // paper. Elsewhere the legend is a plain human heading.
   const note = isNight
     ? night &&
       `${clock(night.from)}–${night.run.finishedAt ? clock(night.to) : "now"} · read ${night.run.ticketsRead} · scored ${night.run.scored} · filed ${night.run.prsFiled}`
-    : group === "today" && night?.run.finishedAt
+    : night?.run.finishedAt
       ? `since ${clock(night.to)}`
       : null;
 

@@ -825,7 +825,7 @@
        there was no reason to draw it. */
     grid-template-columns:
       10px 14px 14px 52px 34px minmax(0, 1fr)
-      34px 112px 84px 146px 52px;
+      44px 112px 84px 146px 52px;
     align-items: center;
     gap: 8px;
     padding: 0.4375rem 0.75rem;
@@ -895,21 +895,15 @@
     color: var(--ink-3);
   }
 
-  /* Three fixed slots, always drawn. A hollow mark scans as fast as a filled
-     one; a gap reads as nothing. */
+  /* Right-aligned so the column ends on a common edge. Be honest about the
+     trade: fixed lit/unlit slots did let the column be read straight down,
+     and drawing only what is present gives that up. It was the wrong thing to
+     buy — a column nobody can decode scans no faster for being aligned. */
   .ops-carries {
     display: flex;
-    gap: 3px;
+    justify-content: flex-end;
+    gap: 4px;
     color: var(--ink-3);
-  }
-  .ops-carries i {
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
-    border: 1px solid currentColor;
-  }
-  .ops-carries i.is-on {
-    background: currentColor;
   }
 
   .ops-cat {
@@ -1050,7 +1044,7 @@
     .ops-row {
       grid-template-columns:
         10px 14px 14px 52px 34px minmax(0, 1fr)
-        34px 34px 84px 20px 52px;
+        44px 34px 84px 20px 52px;
     }
     /* Off the screen, not out of the tree — the three-letter code is the
        abbreviation, and the word it stands for has to stay readable to
