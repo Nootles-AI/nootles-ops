@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
@@ -68,6 +68,7 @@ export default function TicketPage() {
   );
 
   const setStatus = useMutation(adminApi.feedbackSetStatus);
+  const setText = useMutation(adminApi.feedbackSetText);
   const setPriority = useMutation(adminApi.feedbackSetPriority);
   const setKind = useMutation(adminApi.feedbackSetKind);
   const setCategory = useMutation(adminApi.feedbackSetCategory);
@@ -76,11 +77,17 @@ export default function TicketPage() {
   const clearTriage = useMutation(adminApi.feedbackClearTriage);
   const clearAttempt = useMutation(adminApi.feedbackClearAgentAttempt);
 
-  // Three wrappers, not one, so a failure is reported beside the control that
+  // Four wrappers, not one, so a failure is reported beside the control that
   // caused it rather than at the top of a page the operator has scrolled past.
   const edit = useAct();
   const link = useAct();
   const agent = useAct();
+  const report = useAct();
+
+  // The report editor's draft. `null` means reading; a string — even the one
+  // the ticket already has — means the textarea is open. Local until Save, so
+  // an abandoned edit costs nothing and a failed one is still on screen.
+  const [draft, setDraft] = useState<string | null>(null);
 
   // Opening a ticket is what "seen" means — nobody should file that by hand.
   // It goes through the same wrapper as the ladder beneath it: if it fails,
@@ -290,12 +297,74 @@ export default function TicketPage() {
           The strip's short hero line stays the one full-strength rule. */}
       <div className="grid gap-4 lg:grid-cols-[1fr_1px_1fr] lg:gap-0">
         <div className="min-w-0 space-y-4 lg:pr-6">
-          <Panel title="The report">
-            {/* `break-words` is not decoration: a pasted stack trace or URL is
-                one unbroken token, and the panel clips rather than scrolls. */}
-            <p className="ops-prose p-4 break-words whitespace-pre-wrap">
-              {row.text}
-            </p>
+          {/* The report stays the person's words, but an operator may need to
+              amend them — a typo'd URL, a pasted API key, a wall of log noise
+              around one real sentence. The edit is a human's, made on the
+              human's paper, and the record keeps no marginal note of it. */}
+          <Panel
+            title="The report"
+            aside={
+              draft === null ? (
+                <button className="ops-chip" onClick={() => setDraft(row.text)}>
+                  Edit
+                </button>
+              ) : undefined
+            }
+          >
+            {draft === null ? (
+              /* `break-words` is not decoration: a pasted stack trace or URL is
+                 one unbroken token, and the panel clips rather than scrolls. */
+              <p className="ops-prose p-4 break-words whitespace-pre-wrap">
+                {row.text}
+              </p>
+            ) : (
+              <div
+                className={`space-y-2 p-4${report.busy ? " is-resolving" : ""}`}
+              >
+                <textarea
+                  className="ops-input ops-prose min-h-40 resize-y"
+                  aria-label="The report's text"
+                  autoFocus
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                />
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    className="ops-chip is-on"
+                    disabled={draft.trim() === "" || report.busy}
+                    onClick={() =>
+                      report.run(
+                        "save the report",
+                        setText({
+                          token,
+                          id: row._id,
+                          text: draft.trim(),
+                        }).then(() => setDraft(null)),
+                      )
+                    }
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="ops-chip"
+                    disabled={report.busy}
+                    onClick={() => {
+                      setDraft(null);
+                      // Forgotten with the draft, or reopening the editor
+                      // would lead with last time's failure.
+                      report.dismiss();
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {report.failed && (
+                  <p className="ops-failed" role="status">
+                    Could not {report.failed}. Try again.
+                  </p>
+                )}
+              </div>
+            )}
           </Panel>
 
           <div className="flex flex-wrap items-center gap-2">

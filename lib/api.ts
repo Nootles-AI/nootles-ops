@@ -383,6 +383,11 @@ export const adminApi = {
     { token: string; id: string; category?: TicketCategory },
     null
   >("admin:feedbackSetCategory"),
+  feedbackSetText: makeFunctionReference<
+    "mutation",
+    { token: string; id: string; text: string },
+    null
+  >("admin:feedbackSetText"),
   suggestionStats: makeFunctionReference<
     "query",
     { token: string; sinceMs: number },
