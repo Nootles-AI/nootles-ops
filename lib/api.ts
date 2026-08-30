@@ -435,6 +435,21 @@ export const adminApi = {
     { token: string; ownerId: string },
     UserDetail | null
   >("admin:userDetail"),
+  /**
+   * Mints a read-only stand-in session for one user — see `convex/
+   * impersonation.ts` in the main repo. The only function here that is not
+   * under `admin:`, because signing needs the Node runtime and the runtime
+   * directive is per-module.
+   *
+   * The returned token is spent by opening `{app}/impersonate#{token}`. Every
+   * write made under it is refused by the deployment, so this widens what an
+   * operator can SEE and nothing else.
+   */
+  impersonate: makeFunctionReference<
+    "action",
+    { token: string; subject: string; reason: string },
+    { token: string; expiresAt: number }
+  >("impersonationMint:start"),
   chatStats: makeFunctionReference<
     "query",
     { token: string; sinceMs: number },
