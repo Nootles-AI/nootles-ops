@@ -371,7 +371,9 @@ function StandIn({ ownerId }: { ownerId: string }) {
       >
         Cancel
       </button>
-      {act.failed && <p className="ops-failed">Could not {act.failed}.</p>}
+      {act.failed && (
+        <p className="ops-failed">{act.why ?? `Could not ${act.failed}.`}</p>
+      )}
     </form>
   );
 }
