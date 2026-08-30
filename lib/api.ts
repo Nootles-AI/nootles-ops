@@ -244,6 +244,153 @@ export type SurveyRow = {
   createdAt: number;
 };
 
+// ---- Billing --------------------------------------------------------------
+
+/**
+ * What an account may do, as `convex/entitlements.ts` resolves it. `source` is
+ * the interesting half: it says WHICH of the four things is letting them in,
+ * which is the difference between a customer and someone we comped.
+ */
+export type Entitlement = {
+  plan: "free" | "pro";
+  source: "none" | "vip" | "code" | "subscription";
+  left: { projects: number; completions: number; chats: number } | null;
+  used: { projects: number; completions: number; chats: number } | null;
+  expiresAt?: number;
+  cancelAtPeriodEnd?: boolean;
+};
+
+export const PLAN_SOURCE_LABELS: Record<Entitlement["source"], string> = {
+  none: "Free",
+  vip: "VIP",
+  code: "Code",
+  subscription: "Paid",
+};
+
+export type AccessCodeRow = {
+  id: string;
+  code: string;
+  label: string;
+  maxRedemptions: number | null;
+  redemptions: number;
+  durationDays: number | null;
+  expiresAt: number | null;
+  disabledAt: number | null;
+  /** Whether somebody could take it right now — withdrawal, expiry and cap all in. */
+  redeemable: boolean;
+  createdAt: number;
+};
+
+export type RedemptionRow = {
+  ownerId: string;
+  email: string | null;
+  name: string | null;
+  redeemedAt: number;
+  expiresAt: number | null;
+  live: boolean;
+};
+
+export type BillingAccount = {
+  entitlement: Entitlement;
+  vipNote: string | null;
+  vipSetAt: number | null;
+  stripeCustomerId: string | null;
+  subscription: {
+    status: string;
+    interval: "month" | "year";
+    currentPeriodEnd: number;
+    cancelAtPeriodEnd: boolean;
+    priceId: string;
+    subscriptionId: string;
+    updatedAt: number;
+  } | null;
+  walls: {
+    firstAt: number;
+    lastAt: number;
+    projects: number;
+    completions: number;
+    chats: number;
+  } | null;
+  checkoutAt: number | null;
+  checkouts: number;
+};
+
+/**
+ * A Stripe promotion code, flattened. Distinct from an access code in the one
+ * way that matters: money still changes hands, just less of it — so Stripe
+ * owns it, and this is a window rather than a table.
+ */
+export type DiscountRow = {
+  id: string;
+  code: string;
+  active: boolean;
+  percentOff: number | null;
+  amountOff: number | null;
+  currency: string | null;
+  /** "once" | "forever" | "repeating". */
+  duration: string;
+  redemptions: number;
+  maxRedemptions: number | null;
+  /** SECONDS, as Stripe counts — not milliseconds like everything else here. */
+  expiresAt: number | null;
+};
+
+export type ProAccountRow = {
+  ownerId: string;
+  email: string | null;
+  name: string | null;
+  entitlement: Entitlement;
+};
+
+/** One paying customer and what they are charged. Amounts are in cents. */
+export type PayingRow = {
+  ownerId: string;
+  email: string | null;
+  name: string | null;
+  interval: "month" | "year" | null;
+  status: string | null;
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEnd: number | null;
+  /** What leaves their card each period. Null if the price could not be read. */
+  amount: number | null;
+  currency: string | null;
+  /** The same, divided by twelve on an annual plan, so a column can be summed. */
+  monthly: number | null;
+};
+
+export type RevenueReport = {
+  paying: PayingRow[];
+  mrr: number;
+  currency: string | null;
+  /** Rows whose Stripe price would not load — excluded from `mrr`, so said. */
+  unpriced: number;
+};
+
+/** Somebody the paywall stopped. Present here means they are still not paying. */
+export type StalledRow = {
+  ownerId: string;
+  email: string | null;
+  name: string | null;
+  plan: "free" | "pro";
+  source: Entitlement["source"];
+  firstAt: number;
+  lastAt: number;
+  hits: number;
+  projects: number;
+  completions: number;
+  chats: number;
+  /** How many times they opened Stripe. Above zero and still here = looked and left. */
+  checkouts: number;
+  checkoutAt: number | null;
+};
+
+export type FunnelReport = {
+  walled: number;
+  reachedCheckout: number;
+  converted: number;
+  stalled: StalledRow[];
+};
+
 export type UserRow = {
   ownerId: string;
   email: string | null;
@@ -458,4 +605,78 @@ export const adminApi = {
   surveyList: makeFunctionReference<"query", { token: string }, SurveyRow[]>(
     "admin:surveyList",
   ),
+
+  // ---- Billing (convex/adminBilling.ts) ----------------------------------
+
+  codeList: makeFunctionReference<"query", { token: string }, AccessCodeRow[]>(
+    "adminBilling:codeList",
+  ),
+  codeCreate: makeFunctionReference<
+    "mutation",
+    {
+      token: string;
+      label: string;
+      code?: string;
+      maxRedemptions?: number;
+      durationDays?: number;
+      expiresAt?: number;
+    },
+    string
+  >("adminBilling:codeCreate"),
+  codeSetDisabled: makeFunctionReference<
+    "mutation",
+    { token: string; id: string; disabled: boolean },
+    null
+  >("adminBilling:codeSetDisabled"),
+  codeRedemptions: makeFunctionReference<
+    "query",
+    { token: string; id: string },
+    RedemptionRow[]
+  >("adminBilling:codeRedemptions"),
+  setVip: makeFunctionReference<
+    "mutation",
+    { token: string; ownerId: string; vip: boolean; note?: string },
+    null
+  >("adminBilling:setVip"),
+  accountFor: makeFunctionReference<
+    "query",
+    { token: string; ownerId: string },
+    BillingAccount
+  >("adminBilling:accountFor"),
+  proAccounts: makeFunctionReference<"query", { token: string }, ProAccountRow[]>(
+    "adminBilling:proAccounts",
+  ),
+
+  funnel: makeFunctionReference<"query", { token: string }, FunnelReport>(
+    "adminBilling:funnel",
+  ),
+  /** An action: the amounts live in Stripe, so this one has to go and ask. */
+  revenue: makeFunctionReference<"action", { token: string }, RevenueReport>(
+    "adminBilling:revenue",
+  ),
+
+  /** Actions, not queries — these three talk to Stripe, so nothing reactive. */
+  discountList: makeFunctionReference<"action", { token: string }, DiscountRow[]>(
+    "adminBilling:discountList",
+  ),
+  discountCreate: makeFunctionReference<
+    "action",
+    {
+      token: string;
+      label: string;
+      code: string;
+      percentOff?: number;
+      amountOff?: number;
+      currency?: string;
+      forever: boolean;
+      maxRedemptions?: number;
+      expiresAt?: number;
+    },
+    string
+  >("adminBilling:discountCreate"),
+  discountSetActive: makeFunctionReference<
+    "action",
+    { token: string; id: string; active: boolean },
+    null
+  >("adminBilling:discountSetActive"),
 };

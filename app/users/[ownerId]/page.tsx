@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { useAction, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useAct } from "@/lib/act";
-import { adminApi, KIND_WORDS } from "@/lib/api";
+import { adminApi, KIND_WORDS, PLAN_SOURCE_LABELS } from "@/lib/api";
 import { pctOf, shortUser, ticketName, usd, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { Empty, Instrument, Loading, Panel } from "../../components/Bits";
@@ -156,6 +156,8 @@ export default function UserDetail() {
           note={`${modelCalls.toLocaleString()} model calls`}
         />
       </div>
+
+      <Plan ownerId={profile.ownerId} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel
@@ -312,6 +314,159 @@ export default function UserDetail() {
  * the tab that redeems it. Not a link with an href, because the token does
  * not exist until the action answers.
  */
+/**
+ * What this account may do, and the one lever that changes it by hand.
+ *
+ * The allowance is shown even for a pro account's own history, because "how
+ * much of the free tier did they get through before paying" is the question
+ * this page exists to answer. What is NOT here is a way to hand out a code:
+ * codes are made once and given to many, and minting one per person from a
+ * user page is how you end up with four hundred single-use codes nobody can
+ * account for. That lives on Billing.
+ */
+function Plan({ ownerId }: { ownerId: string }) {
+  const token = useAdminToken();
+  const account = useQuery(adminApi.accountFor, { token, ownerId });
+  const setVip = useMutation(adminApi.setVip);
+  const act = useAct();
+  const [asking, setAsking] = useState(false);
+  const [note, setNote] = useState("");
+
+  if (account === undefined) {
+    return (
+      <Panel title="Plan">
+        <Loading />
+      </Panel>
+    );
+  }
+
+  const { entitlement, subscription } = account;
+  const vip = entitlement.source === "vip";
+  const used = entitlement.used;
+
+  return (
+    <Panel
+      title="Plan"
+      aside={
+        vip ? (
+          <button
+            className="ops-chip is-on"
+            disabled={act.busy}
+            onClick={() =>
+              act.run("clear VIP", setVip({ token, ownerId, vip: false }))
+            }
+          >
+            {act.busy ? "…" : "VIP — clear"}
+          </button>
+        ) : asking ? (
+          <form
+            className="flex items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              act.run(
+                "mark them VIP",
+                setVip({ token, ownerId, vip: true, note }).then(() => {
+                  setAsking(false);
+                  setNote("");
+                }),
+              );
+            }}
+          >
+            <input
+              className="ops-input"
+              autoFocus
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Why? (kept)"
+              aria-label="Why this account is VIP"
+            />
+            <button className="ops-chip" disabled={act.busy || note.trim().length < 3}>
+              {act.busy ? "…" : "Confirm"}
+            </button>
+            <button
+              type="button"
+              className="ops-chip"
+              onClick={() => {
+                setAsking(false);
+                act.dismiss();
+              }}
+            >
+              Cancel
+            </button>
+          </form>
+        ) : (
+          <button className="ops-chip" onClick={() => setAsking(true)}>
+            Mark VIP
+          </button>
+        )
+      }
+    >
+      <div className="space-y-2 p-4">
+        <p className="ops-prose">
+          <span className="font-medium">
+            {entitlement.plan === "pro" ? "Pro" : "Free"}
+          </span>
+          <span className="text-ink-2">
+            {" · "}
+            {PLAN_SOURCE_LABELS[entitlement.source]}
+            {entitlement.expiresAt && ` until ${when(entitlement.expiresAt)}`}
+            {entitlement.cancelAtPeriodEnd && " · set to end"}
+            {subscription && ` · ${subscription.interval}ly, ${subscription.status}`}
+          </span>
+        </p>
+
+        {account.vipNote && (
+          <p className="ops-note">
+            VIP: {account.vipNote}
+            {account.vipSetAt && ` · set ${when(account.vipSetAt)}`}
+          </p>
+        )}
+
+        {/* The free allowance is one-time and never refills, so these read as
+            a record of what they have spent rather than a monthly balance. */}
+        {used ? (
+          <p className="ops-note">
+            Used {used.projects} of their projects · {used.completions}{" "}
+            completions kept · {used.chats} conversations
+          </p>
+        ) : (
+          <p className="ops-note">Nothing is metered while they are on Pro.</p>
+        )}
+
+        {/* Where they met the wall, and whether they got as far as the price.
+            "Stopped nine times, never opened Stripe" and "stopped once, opened
+            Stripe twice" are different people wanting different things. */}
+        {account.walls && (
+          <p className="ops-note">
+            Stopped by the paywall{" "}
+            {account.walls.projects + account.walls.completions + account.walls.chats}×
+            {" ("}
+            {[
+              account.walls.projects && "projects",
+              account.walls.completions && "completions",
+              account.walls.chats && "chats",
+            ]
+              .filter(Boolean)
+              .join(", ")}
+            {") · first "}
+            {when(account.walls.firstAt)} · last {when(account.walls.lastAt)}
+            {" · "}
+            {account.checkouts === 0
+              ? "never opened Stripe"
+              : `opened Stripe ${account.checkouts}× (${
+                  account.checkoutAt ? when(account.checkoutAt) : "—"
+                })`}
+          </p>
+        )}
+
+        {act.failed && (
+          <p className="ops-failed">{act.why ?? `Could not ${act.failed}.`}</p>
+        )}
+      </div>
+    </Panel>
+  );
+}
+
 function StandIn({ ownerId }: { ownerId: string }) {
   const token = useAdminToken();
   const start = useAction(adminApi.impersonate);
