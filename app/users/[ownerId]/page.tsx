@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useParams } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useAction, useQuery } from "convex/react";
+import { useAct } from "@/lib/act";
 import { adminApi, KIND_WORDS } from "@/lib/api";
 import { pctOf, shortUser, ticketName, usd, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
@@ -101,6 +103,7 @@ export default function UserDetail() {
               Write to them
             </a>
           )}
+          <StandIn ownerId={profile.ownerId} />
           <p className="ops-mono ml-auto text-ink-2">
             joined {when(profile.createdAt)} · last active{" "}
             {detail.lastActiveAt ? when(detail.lastActiveAt) : "never"}
@@ -293,6 +296,83 @@ export default function UserDetail() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Look at Nootles through this person's account, for half an hour, read-only.
+ *
+ * The reason is asked for rather than optional: the deployment logs every
+ * session to an `impersonations` row, and a log of unexplained entries is a
+ * log nobody can audit. It is also the one field a human writes, so the
+ * deployment refuses anything under three characters.
+ *
+ * Opens in a new tab, and the token rides in the fragment — browsers send a
+ * fragment to no server and write it to no referrer, so it is spoken only in
+ * the tab that redeems it. Not a link with an href, because the token does
+ * not exist until the action answers.
+ */
+function StandIn({ ownerId }: { ownerId: string }) {
+  const token = useAdminToken();
+  const start = useAction(adminApi.impersonate);
+  const act = useAct();
+  const [asking, setAsking] = useState(false);
+  const [reason, setReason] = useState("");
+
+  // No app to send the operator to means no button, rather than one that
+  // mints a real session and then drops it on the floor.
+  const app = process.env.NEXT_PUBLIC_NOOTLES_URL;
+  if (!app) return null;
+
+  if (!asking) {
+    return (
+      <button className="ops-chip" onClick={() => setAsking(true)}>
+        Stand in
+      </button>
+    );
+  }
+
+  return (
+    <form
+      className="flex items-center gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        act.run(
+          "start the session",
+          start({ token, subject: ownerId, reason }).then((session) => {
+            window.open(`${app}/impersonate#${session.token}`, "_blank", "noopener");
+            setAsking(false);
+            setReason("");
+          }),
+        );
+      }}
+    >
+      <input
+        className="ops-input"
+        autoFocus
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Why? (logged)"
+        aria-label="Reason for standing in"
+      />
+      <button
+        className="ops-chip"
+        disabled={act.busy || reason.trim().length < 3}
+      >
+        {act.busy ? "Minting…" : "Go"}
+      </button>
+      <button
+        type="button"
+        className="ops-chip"
+        onClick={() => {
+          setAsking(false);
+          act.dismiss();
+        }}
+      >
+        Cancel
+      </button>
+      {act.failed && <p className="ops-failed">Could not {act.failed}.</p>}
+    </form>
   );
 }
 
