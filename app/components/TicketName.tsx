@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { ticketName } from "@/lib/format";
 
 /**
- * A ticket's name, and the fastest way to start a PR for it.
+ * A ticket's name, and one click to have it.
  *
- * Copying yields `NT-42_` — the prefix *with* its delimiter — because that is
- * what the convention wants next: paste, keep typing, and the title matches
- * `NT-{n}_pr_name`. Copying the bare name would leave the one character most
- * likely to be forgotten to be typed by hand.
+ * This used to copy `NT-42_` — the prefix *with* its delimiter — because a
+ * pull-request title had to begin that way for the poller to match it. Nothing
+ * matches it now, so the trailing underscore is a character the operator has
+ * to delete every time they paste the name anywhere that is not a branch. The
+ * bare name is what is copied.
  */
 export function TicketName({ number }: { number: number }) {
   const name = ticketName(number);
@@ -24,10 +25,10 @@ export function TicketName({ number }: { number: number }) {
   return (
     <button
       className="ops-chip text-[length:var(--text-meta)] tabular-nums"
-      title={`Copy "${name}_" for a PR title`}
+      title={`Copy "${name}"`}
       onClick={() => {
         void navigator.clipboard
-          .writeText(`${name}_`)
+          .writeText(name)
           .then(() => setCopied(true))
           // A clipboard the browser won't grant is not worth an error state.
           .catch(() => {});

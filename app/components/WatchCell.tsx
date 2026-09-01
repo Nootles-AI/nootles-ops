@@ -1,5 +1,4 @@
-import type { FeedbackListRow, PrState } from "@/lib/api";
-import { PrIcon } from "./PrIcon";
+import type { FeedbackListRow } from "@/lib/api";
 
 /**
  * The row's one piece of the machine's paper: everything the night shift did
@@ -12,17 +11,11 @@ import { PrIcon } from "./PrIcon";
  *
  * The band is the point. What you are looking for at 7am is not what the
  * agent did, it is where it never got to, and that is only legible as a gap.
+ *
+ * The glyph and the count are gone with the PR link, and the cell keeps its
+ * width: the band is what is being read, and a band that narrows because a
+ * fact was retired is a band that has to be re-learned.
  */
-
-/**
- * Which of a ticket's pull requests speaks for it: the furthest along, so a
- * merged PR beside an abandoned one reads as merged.
- */
-const PR_RANK: PrState[] = ["merged", "open", "draft", "closed"];
-
-function leadPr(states: PrState[]): PrState | null {
-  return PR_RANK.find((s) => states.includes(s)) ?? null;
-}
 
 export function WatchCell({
   row,
@@ -32,16 +25,12 @@ export function WatchCell({
   /** From /agent. Below it, the agent will not pick the ticket up tonight. */
   threshold?: number;
 }) {
-  const lead = leadPr(row.prStates);
   const scored = row.triageScore !== undefined;
 
   // Nothing here at all, and nobody stopped it: the night shift simply did
   // not reach this one.
   const unsigned =
-    !row.agentSkip &&
-    !scored &&
-    row.agentAttemptedAt === undefined &&
-    row.prStates.length === 0;
+    !row.agentSkip && !scored && row.agentAttemptedAt === undefined;
 
   const said = [
     row.agentSkip && "omitted from agent review",
@@ -51,9 +40,9 @@ export function WatchCell({
         ? "above tonight's threshold"
         : "below tonight's threshold"
       : null,
+    row.agentOutcome === "filed" && "a fix was filed",
     row.agentOutcome === "failed" && "the attempt failed",
     row.agentOutcome === "declined" && "the agent declined it",
-    lead && `${row.prStates.length} pull request${row.prStates.length > 1 ? "s" : ""}, ${lead}`,
     unsigned && "not handed to the agent yet",
   ]
     .filter(Boolean)
@@ -67,18 +56,12 @@ export function WatchCell({
       title={said}
     >
       <span className="sr-only">{said}</span>
-      {(row.agentOutcome === "declined" || row.agentOutcome === "failed") && (
+      {/* All three outcomes now, not two. `filed` used to be spoken by the PR
+          glyph beside this square, and with the glyph gone it would otherwise
+          be the one thing the agent can do that leaves no mark in the inbox —
+          a filed ticket drawn exactly like an untouched scored one. */}
+      {row.agentOutcome && (
         <span className={`ops-outcome is-${row.agentOutcome}`} aria-hidden />
-      )}
-      {lead && (
-        <>
-          <PrIcon state={lead} />
-          {row.prStates.length > 1 && (
-            <span className="ops-prcount" aria-hidden>
-              {row.prStates.length}
-            </span>
-          )}
-        </>
       )}
       {scored && (
         <span

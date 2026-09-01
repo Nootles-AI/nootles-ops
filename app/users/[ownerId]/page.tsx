@@ -258,9 +258,8 @@ export default function UserDetail() {
         </Panel>
 
         {/* Not TicketRow: that draws a FeedbackListRow, and this endpoint
-            returns a slimmer shape with no PR states. Same vocabulary, drawn
-            by hand — and the route carries the ticket's name, not its id, so
-            a pasted PR branch resolves to the same page. */}
+            returns a slimmer shape — no triage score, nothing the agent did.
+            Same vocabulary, drawn by hand. */}
         <div className="lg:col-span-2">
           <Panel title="Their reports">
             {detail.reports.length === 0 ? (
