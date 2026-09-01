@@ -33,7 +33,6 @@ const STATUSES: { id: TicketStatus | undefined; label: string }[] = [
   { id: "new", label: "New" },
   { id: "seen", label: "Seen" },
   { id: "in_progress", label: "In progress" },
-  { id: "pr_filed", label: "PR filed" },
   { id: "done", label: "Done" },
   { id: "declined", label: "Declined" },
 ];

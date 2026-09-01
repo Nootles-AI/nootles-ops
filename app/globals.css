@@ -122,15 +122,6 @@
   --alarm: #cf1f33; /* failed, error */
   --urgent: #b83d06; /* the one coloured priority, and only that one */
 
-  /* -- Pull-request states. Restrained: who filed it matters more here than
-        which hue GitHub paints it. --------------------------------------- */
-  /* Draft is the quietest state, but Ink 4 is the tone of absence — as the
-     pill's text and as the whole draft glyph it sat around 2.6:1. */
-  --pr-draft: var(--ink-3);
-  --pr-open: var(--live);
-  --pr-merged: var(--accent);
-  --pr-closed: var(--ink-3);
-
   /* -- Type. One family, and a ramp that lives between 11 and 20px with 13
         doing nearly all the work. There is deliberately no 14 and no 16: the
         narrowness of the band is what reads as dense but calm. ----------- */
@@ -186,7 +177,6 @@
       --ember: #edbf0a;
       --alarm: #ff8583;
       --urgent: #ff7235;
-      --pr-closed: var(--ink-3);
   }
 }
 
@@ -217,7 +207,6 @@
     --ember: #edbf0a;
     --alarm: #ff8583;
     --urgent: #ff7235;
-    --pr-closed: var(--ink-3);
 }
 
 /* `inline` is load-bearing: it inlines the value into the utility instead of
@@ -543,9 +532,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    /* 12px, like the row, the cell and the pull request — a panel heading
-       that does not start where its rows start gives the card two left
-       edges. */
+    /* 12px, like the row and the cell — a panel heading that does not start
+       where its rows start gives the card two left edges. */
     padding: 9px 12px;
     border-bottom: 1px solid var(--rule);
   }
@@ -993,12 +981,22 @@
   }
 
   /* The attempt's outcome, in the same square vocabulary the strip uses
-     below the line: filled = it happened, hollow = it was declined. */
+     below the line: filled = it happened, hollow = it was declined.
+     All three are drawn now. `filed` used to be spoken by the pull-request
+     glyph beside this square, and that glyph has gone with the link it drew —
+     so the one outcome worth the most is the one that would otherwise leave
+     no mark at all. */
   .ops-outcome {
     width: 5px;
     height: 5px;
     flex-shrink: 0;
     border: 1px solid var(--machine);
+  }
+  /* Filled in the machine's own ink: the night shift got a fix out of it.
+     Not the accent — that is spent on the score clearing tonight's bar, and
+     two accents in one 84px cell is neither of them. */
+  .ops-outcome.is-filed {
+    background: var(--machine);
   }
   .ops-outcome.is-declined {
     border-color: var(--rule-glyph);
@@ -1006,10 +1004,6 @@
   .ops-outcome.is-failed {
     background: var(--alarm);
     border-color: var(--alarm);
-  }
-
-  .ops-prcount {
-    color: var(--ink-2);
   }
 
   /* Group separators. The overnight boundary is the real one, and its legend
@@ -1349,67 +1343,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  /* ==== Pull requests ==================================================== */
-  .ops-pr {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 7px 12px;
-    font-size: var(--text-ui);
-    border-bottom: 1px solid var(--rule);
-  }
-  .ops-pr:last-child {
-    border-bottom: none;
-  }
-  .ops-pr:hover {
-    background: color-mix(in oklab, var(--ink) 5%, transparent);
-  }
-  /* A 3px edge, muted: the agent filed this one. Not the accent — a coloured
-     card edge is the one use the accent is banned from outright. */
-  .ops-pr.is-agent {
-    box-shadow: inset 3px 0 0 var(--ink-3);
-  }
-  .ops-pr-title {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-    font-size: var(--text-ui);
-    color: var(--ink);
-  }
-  .ops-pr:hover .ops-pr-title {
-    text-decoration: underline;
-  }
-  .ops-pr-state {
-    flex-shrink: 0;
-    width: 4.25rem;
-    text-align: center;
-    padding: 1px 0;
-    border-radius: 999px;
-    border: 1px solid currentColor;
-    font-variant-numeric: tabular-nums;
-    font-size: var(--text-meta);
-  }
-  .ops-pr-state.is-draft {
-    color: var(--pr-draft);
-  }
-  /* Draft is the one PR state drawn in tertiary, and this list goes on the
-     machine's paper whenever every request in it is the agent's. */
-  .ops-watch .ops-pr-state.is-draft {
-    color: var(--ink-2);
-  }
-  .ops-pr-state.is-open {
-    color: var(--pr-open);
-  }
-  .ops-pr-state.is-merged {
-    color: var(--pr-merged);
-  }
-  .ops-pr-state.is-closed {
-    color: var(--pr-closed);
   }
 
   /* ==== The op timeline ==================================================

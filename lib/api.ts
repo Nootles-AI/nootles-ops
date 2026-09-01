@@ -11,7 +11,6 @@ export type TicketStatus =
   | "new"
   | "seen"
   | "in_progress"
-  | "pr_filed"
   | "done"
   | "declined";
 
@@ -115,26 +114,16 @@ export type FeedbackRow = {
   createdAt: number;
 };
 
-/** A ticket in the inbox, which also knows whether any PR names it. */
-export type FeedbackListRow = FeedbackRow & { prStates: PrState[] };
+/**
+ * A ticket in the inbox. The list row used to carry more than the ticket — the
+ * states of every pull request naming it, grouped server-side — because the
+ * deployment polled GitHub and kept a row per PR. It no longer does, so the
+ * row is the ticket and nothing else.
+ */
+export type FeedbackListRow = FeedbackRow;
 
-export type PrState = "draft" | "open" | "closed" | "merged";
-
-export type TicketPr = {
-  _id: string;
-  repo: string;
-  prNumber: number;
-  title: string;
-  url: string;
-  state: PrState;
-  mergedAt?: number;
-  agentFiled: boolean;
-  firstSeenAt: number;
-};
-
-/** What the detail page gets: the ticket, its PRs, and its duplicate links. */
+/** What the detail page gets: the ticket and its duplicate links. */
 export type FeedbackDetail = FeedbackRow & {
-  prs: TicketPr[];
   duplicateOfNumber: number | null;
   duplicateNumbers: number[];
 };

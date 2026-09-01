@@ -20,7 +20,6 @@ import { clock, ticketName, ticketNumber, when } from "@/lib/format";
 import { useOps } from "@/lib/ops";
 import { useAdminToken } from "@/lib/session";
 import { Empty, Loading, Panel } from "../../components/Bits";
-import { PrIcon } from "../../components/PrIcon";
 import { PriorityIcon } from "../../components/PriorityIcon";
 import { StatusIcon } from "../../components/StatusIcon";
 import { TicketName } from "../../components/TicketName";
@@ -34,15 +33,13 @@ import { Who } from "../../components/Who";
  * and the same rule lies down flat. Nothing the coding agent did is ever drawn
  * on the human's paper, and nothing a human did is ever drawn on the
  * machine's — which is why the duplicate link changes paper depending on who
- * made it, and why the pull-request list only goes on Watch when every request
- * in it was filed by the agent.
+ * made it.
  */
 
 const STATUSES: { id: TicketStatus; label: string }[] = [
   { id: "new", label: "New" },
   { id: "seen", label: "Seen" },
   { id: "in_progress", label: "In progress" },
-  { id: "pr_filed", label: "PR filed" },
   { id: "done", label: "Done" },
   { id: "declined", label: "Declined" },
 ];
@@ -141,10 +138,9 @@ export default function TicketPage() {
   const attempted = row.agentAttemptedAt !== undefined;
   const agentDuplicate =
     row.duplicateOfNumber !== null && row.duplicateSetBy === "agent";
-  // Never handed to the agent at all: no triage, no attempt, no pull request,
-  // and no link it drew. The whole column is the unsigned line.
-  const untouched =
-    !triaged && !attempted && row.prs.length === 0 && !agentDuplicate;
+  // Never handed to the agent at all: no triage, no attempt, and no link it
+  // drew. The whole column is the unsigned line.
+  const untouched = !triaged && !attempted && !agentDuplicate;
   const notReached = untouchedBecause(row, config, lastRun);
 
   return (
@@ -563,42 +559,6 @@ export default function TicketPage() {
                 </p>
               )}
 
-              {row.prs.length > 0 && (
-                /* Watch paper only when every request in the list is the
-                   agent's; one human-filed request in there and the tint would
-                   be claiming authorship it does not have. The 3px Machine edge
-                   still marks each agent-filed row either way. */
-                <Panel
-                  machine={row.prs.every((pr) => pr.agentFiled)}
-                  title="Pull requests"
-                  aside={<span className="ops-mono text-ink-2">{row.prs.length}</span>}
-                >
-                  {row.prs.map((pr) => (
-                    <a
-                      key={pr._id}
-                      href={pr.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`ops-pr${pr.agentFiled ? " is-agent" : ""}`}
-                    >
-                      <PrIcon state={pr.state} />
-                      <span className="ops-pr-title">{pr.title}</span>
-                      {pr.agentFiled && (
-                        <span className="sr-only">Filed by the agent</span>
-                      )}
-                      <span className="ops-mono shrink-0 text-ink-2">
-                        {pr.repo.split("/").at(-1)}#{pr.prNumber}
-                      </span>
-                      <span className={`ops-pr-state is-${pr.state}`}>
-                        {pr.state}
-                      </span>
-                      <span className="ops-note shrink-0">
-                        {when(pr.mergedAt ?? pr.firstSeenAt)}
-                      </span>
-                    </a>
-                  ))}
-                </Panel>
-              )}
             </>
           )}
 

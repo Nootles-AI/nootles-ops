@@ -5,6 +5,11 @@ import type { TicketStatus } from "@/lib/api";
  * untriaged, empty for seen, half-filled amber for in progress, green check
  * for done, crossed gray for declined.
  *
+ * There was a sixth, `pr_filed` — a closed ring around a waiting centre. It is
+ * gone with the GitHub poll that was the only thing that ever set it; a ticket
+ * with an unmerged pull request against it is `in_progress`, which is what
+ * that glyph was drawing a longer way round.
+ *
  * Linear draws the untriaged with a dashed ring. Here it cannot: dashed is
  * spoken for across the whole app — the machine did not act here — and this
  * glyph sits a few pixels from the watch cell, which says exactly that. Status
@@ -62,24 +67,6 @@ export function StatusIcon({ status }: { status: TicketStatus }) {
             strokeWidth="1.5"
           />
           <path d="M7 3.75 A3.25 3.25 0 0 1 7 10.25 Z" fill="var(--ember)" />
-        </svg>
-      );
-    // A PR exists but nobody has merged it: the ring closes, the centre waits.
-    // Grey, and this glyph is drawn in every row — colour marks the two states
-    // that want attention, in hand and settled, and this is neither. The
-    // waiting centre is what separates it from `seen`; it needs no hue.
-    case "pr_filed":
-      return (
-        <svg {...common}>
-          <circle
-            cx="7"
-            cy="7"
-            r="5.25"
-            fill="none"
-            stroke="var(--ink-3)"
-            strokeWidth="1.5"
-          />
-          <circle cx="7" cy="7" r="2.25" fill="var(--ink-3)" />
         </svg>
       );
     case "done":
