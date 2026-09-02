@@ -746,6 +746,71 @@
     padding: 6px 9px 3px;
   }
 
+  /* ==== The dialog =======================================================
+     One so far: filing the report in Linear. Elevated the way the menu is —
+     lighter than the pane plus a hairline — and the frame behind it dimmed,
+     which is the one shadow this app casts on purpose. */
+  .ops-dialog {
+    width: min(100% - 2rem, 40rem);
+    margin: auto;
+    padding: 0;
+    background: var(--watch);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--lift);
+    color: var(--ink-2);
+    overflow: clip;
+  }
+  .ops-dialog::backdrop {
+    background: rgb(0 0 0 / 0.4);
+  }
+  /* The title and the body are set the way Linear sets them: bare fields on
+     the paper, no box. The focus ring is turned off on these two only — the
+     dialog is the focus, and a ring around a bare field is a box after all. */
+  .ops-dialog-title {
+    width: 100%;
+    background: transparent;
+    font-size: var(--text-title);
+    font-weight: var(--w-ui);
+    color: var(--ink);
+  }
+  .ops-dialog-body {
+    width: 100%;
+    min-height: 7rem;
+    background: transparent;
+    font-size: var(--text-ui);
+    line-height: 1.55;
+    color: var(--ink-2);
+    resize: vertical;
+  }
+  .ops-dialog-title::placeholder,
+  .ops-dialog-body::placeholder {
+    color: var(--ink-4);
+  }
+  .ops-dialog-title:focus-visible,
+  .ops-dialog-body:focus-visible {
+    box-shadow: none;
+  }
+  .ops-dialog-fold > summary {
+    cursor: pointer;
+    list-style: none;
+  }
+  .ops-dialog-fold > summary::before {
+    content: "▸ ";
+  }
+  .ops-dialog-fold[open] > summary::before {
+    content: "▾ ";
+  }
+  /* A label's own colour, the one place Linear's hues are let onto the page:
+     they are the label's, not ours, and 8px of them is a swatch, not a tint. */
+  .ops-swatch {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    background: var(--swatch, var(--ink-3));
+  }
+
   /* The kebab: the same six mutations the right-click menu holds, reachable
      from the keyboard. It takes the age's place while the row is under the
      cursor — the age is the one field you are never reading at the moment you
