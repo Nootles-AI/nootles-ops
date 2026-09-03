@@ -20,6 +20,7 @@ import { clock, ticketName, ticketNumber, when } from "@/lib/format";
 import { useOps } from "@/lib/ops";
 import { useAdminToken } from "@/lib/session";
 import { Empty, Loading, Panel } from "../../components/Bits";
+import { FileInLinear } from "../../components/LinearIssue";
 import { PriorityIcon } from "../../components/PriorityIcon";
 import { StatusIcon } from "../../components/StatusIcon";
 import { TicketName } from "../../components/TicketName";
@@ -277,6 +278,10 @@ export default function TicketPage() {
           >
             Omit from agent review
           </button>
+
+          <span className="mx-1 h-4 w-px self-center bg-rule" aria-hidden />
+
+          <FileInLinear row={row} />
         </div>
 
         {edit.failed && (
