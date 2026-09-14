@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useAct } from "@/lib/act";
 import { adminApi, KIND_WORDS, PLAN_SOURCE_LABELS } from "@/lib/api";
-import { pctOf, shortUser, ticketName, usd, when } from "@/lib/format";
+import { day, pctOf, shortUser, ticketName, usd, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { Empty, Instrument, Loading, Panel } from "../../components/Bits";
 import { StatusIcon } from "../../components/StatusIcon";
@@ -408,7 +408,7 @@ function Plan({ ownerId }: { ownerId: string }) {
           <span className="text-ink-2">
             {" · "}
             {PLAN_SOURCE_LABELS[entitlement.source]}
-            {entitlement.expiresAt && ` until ${when(entitlement.expiresAt)}`}
+            {entitlement.expiresAt && ` until ${day(entitlement.expiresAt)}`}
             {entitlement.cancelAtPeriodEnd && " · set to end"}
             {subscription && ` · ${subscription.interval}ly, ${subscription.status}`}
           </span>
