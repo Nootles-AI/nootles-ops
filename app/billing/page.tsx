@@ -12,7 +12,7 @@ import {
   type RevenueReport,
 } from "@/lib/api";
 import { useAct } from "@/lib/act";
-import { shortUser, when } from "@/lib/format";
+import { day, shortUser, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { Empty, Instrument, Loading, Panel } from "../components/Bits";
 
@@ -127,7 +127,7 @@ export default function Billing() {
                         </td>
                         <td className="text-[length:var(--text-note)] text-ink-2">
                           {row.entitlement.expiresAt
-                            ? when(row.entitlement.expiresAt)
+                            ? day(row.entitlement.expiresAt)
                             : "No end date"}
                         </td>
                       </tr>
@@ -271,7 +271,7 @@ function Money({
                       )}
                     </td>
                     <td className="text-[length:var(--text-note)] text-ink-2">
-                      {row.currentPeriodEnd ? when(row.currentPeriodEnd) : "—"}
+                      {row.currentPeriodEnd ? day(row.currentPeriodEnd) : "—"}
                     </td>
                   </tr>
                 ))}
@@ -414,7 +414,7 @@ function CodeRow({
             ? "Spent"
             : row.expiresAt === null
               ? "No end date"
-              : when(row.expiresAt)}
+              : day(row.expiresAt)}
       </td>
       <td className="text-right">
         <button
@@ -564,7 +564,7 @@ function Redemptions({ token, code }: { token: string; code: AccessCodeRow }) {
                       ? "Lapsed"
                       : row.expiresAt === null
                         ? "Forever"
-                        : `Until ${when(row.expiresAt)}`}
+                        : `Until ${day(row.expiresAt)}`}
                   </td>
                 </tr>
               ))}
@@ -734,7 +734,7 @@ function Discounts({ token }: { token: string }) {
                   {/* Stripe counts expiry in seconds; everything else on this
                       dashboard counts in milliseconds. */}
                   <td className="text-[length:var(--text-note)] text-ink-2">
-                    {row.expiresAt === null ? "No end date" : when(row.expiresAt * 1000)}
+                    {row.expiresAt === null ? "No end date" : day(row.expiresAt * 1000)}
                   </td>
                   <td className="text-right">
                     <button

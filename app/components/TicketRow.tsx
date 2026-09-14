@@ -7,7 +7,7 @@ import {
   KIND_WORDS,
   type FeedbackListRow,
 } from "@/lib/api";
-import { ticketName, when } from "@/lib/format";
+import { age, ticketName } from "@/lib/format";
 import { Kebab } from "./Menu";
 import { PriorityIcon } from "./PriorityIcon";
 import { StatusIcon } from "./StatusIcon";
@@ -115,7 +115,9 @@ export function TicketRow({
         <Who ownerId={row.ownerId} />
       </span>
 
-      <span className="ops-age">{when(row.createdAt)}</span>
+      <span className="ops-age" title={new Date(row.createdAt).toLocaleString()}>
+        {age(row.createdAt)}
+      </span>
 
       {onMenu && (
         <Kebab
