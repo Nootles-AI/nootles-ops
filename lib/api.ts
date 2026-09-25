@@ -540,6 +540,11 @@ export const adminApi = {
     {
       sampled: number;
       capped: boolean;
+      /**
+       * Calls the backend could have verified and did not, by why — none of
+       * them billed. Absent from a backend older than NT-82.
+       */
+      unverified?: { missing: number; stale: number; invalid: number };
       features: AiFeatureStats[];
       costByDay: { day: string; costUsd: number }[];
       spenders: { ownerId: string; costUsd: number }[];

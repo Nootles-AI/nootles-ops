@@ -100,6 +100,9 @@ export default function Calls() {
             in this range are not counted.
           </p>
         )}
+        {/* A ledger secret, or a clock, that Vercel and Convex disagree on
+            bills nothing and says so nowhere else (NT-82). */}
+        {stats && <Unbilled unverified={stats.unverified} />}
       </Panel>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -242,4 +245,30 @@ function dotFor(status: "ok" | "error" | "aborted" | "timeout"): string {
   if (status === "ok") return " is-ok";
   if (status === "aborted") return " is-off";
   return " is-bad";
+}
+
+const WHY = {
+  missing: "came without a signature",
+  stale: "were signed too far from Convex’s clock",
+  invalid: "had a signature that didn’t hold",
+} as const;
+
+/**
+ * Counted above, billed to no one: rows the backend holds the secret to
+ * verify and could not. Said with each reason's count, because each points at
+ * a different fix — the secret unset on Vercel, a clock, or two secrets.
+ */
+function Unbilled({ unverified }: { unverified?: Record<keyof typeof WHY, number> }) {
+  const reasons = (Object.keys(WHY) as (keyof typeof WHY)[]).filter((why) => unverified?.[why]);
+  if (!unverified || reasons.length === 0) return null;
+  const total = reasons.reduce((n, why) => n + unverified[why], 0);
+  return (
+    <p className="ops-note border-t border-rule px-4 py-2 text-alarm">
+      {total.toLocaleString()} {total === 1 ? "call" : "calls"} here{" "}
+      {total === 1 ? "wasn’t" : "weren’t"} billed:{" "}
+      {reasons.map((why) => `${unverified[why].toLocaleString()} ${WHY[why]}`).join(", ")}.
+      Set <code className="ops-mono">AI_LEDGER_SECRET</code> to the same value on Vercel and
+      Convex.
+    </p>
+  );
 }
