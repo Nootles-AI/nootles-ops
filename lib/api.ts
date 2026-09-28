@@ -197,7 +197,18 @@ export type AiCallRow = {
   _id: string;
   _creationTime: number;
   ownerId: string;
-  feature: "fim" | "reformat" | "diagram" | "chat";
+  feature:
+    | "fim"
+    | "reformat"
+    | "diagram"
+    | "chat"
+    | "categorize"
+    | "feedback"
+    | "album"
+    | "context"
+    | "commentsGate";
+  turnId?: string;
+  turnRequest?: true;
   model: string;
   promptTokens?: number;
   completionTokens?: number;
