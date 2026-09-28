@@ -2,6 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { adminApi } from "@/lib/api";
+import { chatTurns } from "@/lib/chatTurns";
 import { ms, usd, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { Empty, Loading, Panel } from "../components/Bits";
@@ -19,7 +20,8 @@ export default function Calls() {
   const token = useAdminToken();
   const { range, setRange, sinceMs } = useRange();
   const stats = useQuery(adminApi.aiCallStats, { token, sinceMs });
-  const recent = useQuery(adminApi.aiCallRecent, { token, limit: 50 });
+  const recent = useQuery(adminApi.aiCallRecent, { token, limit: 200 });
+  const turns = recent ? chatTurns(recent).slice(0, 50) : undefined;
 
   // Both queries answer with an object or an array, never null — so
   // `undefined` here means one thing only: it has not arrived yet.
@@ -163,6 +165,61 @@ export default function Calls() {
         </Panel>
       </div>
 
+      <Panel
+        title="Recent chat turns"
+        aside={<p className="ops-note">From the latest 200 calls. Older turns may be partial.</p>}
+      >
+        {turns === undefined ? (
+          <Loading />
+        ) : turns.length === 0 ? (
+          <Empty>No chat turns in the recent calls.</Empty>
+        ) : (
+          <div className="ops-scroll">
+            <table className="ops-table">
+              <thead>
+                <tr>
+                  <th>Turn</th>
+                  <th>Status</th>
+                  <th className="num">TTFB</th>
+                  <th className="num">Request time</th>
+                  <th className="num">Turn span</th>
+                  <th className="num">Cost</th>
+                  <th>User</th>
+                  <th className="num">When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {turns.map((turn) => (
+                  <tr key={`${turn.ownerId}:${turn.id}`}>
+                    <td className="whitespace-nowrap" title={turn.id}>
+                      {turn.requestCount} {turn.requestCount === 1 ? "request" : "requests"}
+                      {turn.rows.length > turn.requestCount && ` · ${turn.rows.length} calls`}
+                    </td>
+                    <td className="whitespace-nowrap">
+                      <span className={`ops-dot${dotFor(turn.status)}`} aria-hidden />{" "}
+                      {turn.status}
+                    </td>
+                    <td className="num">{turn.ttfbMs !== undefined ? ms(turn.ttfbMs) : "–"}</td>
+                    <td className="num">{ms(turn.requestMs)}</td>
+                    <td className="num">{ms(turn.elapsedMs)}</td>
+                    <td className="num">{turn.costUsd !== undefined ? usd(turn.costUsd) : "–"}</td>
+                    <td className="whitespace-nowrap"><Who ownerId={turn.ownerId} /></td>
+                    <td className="num text-[length:var(--text-note)] text-ink-2">
+                      {when(turn.endedAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="ops-note border-t border-rule px-4 py-2">
+          Request time sums chat HTTP requests. Turn span runs from the first request to the
+          last recorded call, including client tools and any approval wait. Cost includes
+          only calls with a known price.
+        </p>
+      </Panel>
+
       {/* The latest 50 are the whole log, not this range's slice — the range
           chips move the figures above and leave this list alone. That is only
           knowable from the page if the page says it. */}
@@ -191,7 +248,7 @@ export default function Calls() {
                 </tr>
               </thead>
               <tbody>
-                {recent.map((r) => (
+                {recent.slice(0, 50).map((r) => (
                   <tr key={r._id}>
                     {/* Which model served it rides along as the title rather
                         than a tenth column — it is asked for one row at a
