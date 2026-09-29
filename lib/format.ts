@@ -5,6 +5,19 @@ export function usd(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
+/**
+ * Cents to money, in whatever currency Stripe charged it in. Every Stripe
+ * amount crosses the contract in the currency's smallest unit, so this is the
+ * one place it is divided.
+ */
+export function cash(amount: number, currency: string | null): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: (currency ?? "usd").toUpperCase(),
+    minimumFractionDigits: amount % 100 === 0 ? 0 : 2,
+  }).format(amount / 100);
+}
+
 export function when(ms: number): string {
   const mins = Math.floor((Date.now() - ms) / 60_000);
   if (mins < 1) return "just now";
