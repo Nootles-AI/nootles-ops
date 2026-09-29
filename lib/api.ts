@@ -391,6 +391,97 @@ export type FunnelReport = {
   stalled: StalledRow[];
 };
 
+/**
+ * An influencer's `/r/<slug>` link (convex/adminBilling.ts, `// ---- Affiliates
+ * ----`). Measurement only: nothing here pays anybody. `clicks` and `visitors`
+ * are all-time counts of signed clicks; `signups` counts every account the
+ * link or its code brought. Instants in milliseconds.
+ */
+export type AffiliateRow = {
+  _id: string;
+  /** Lowercase, and never changes — it is printed in bios and videos. */
+  slug: string;
+  name: string;
+  note?: string;
+  /** Where a click lands: https on nootles.com, www. or app. only. */
+  destination: string;
+  /** The affiliate's own account, so their link cannot claim them. */
+  ownerId?: string;
+  ownerEmail?: string;
+  /** A Stripe promotion code linked to them (`promo_…`), and as typed. */
+  promotionCodeId?: string;
+  promotionCode?: string;
+  createdAt: number;
+  disabledAt?: number;
+  clicks: number;
+  visitors: number;
+  signups: number;
+};
+
+/**
+ * One link's funnel, click to paying. Each milestone counts the signups that
+ * got that far, derived from billing when asked. Money is in the currency's
+ * smallest unit a month, as `RevenueReport.mrr`. Everything past the counts
+ * the list already has is optional, so either repo can deploy first.
+ */
+export type AffiliateStatsRow = {
+  id: string;
+  slug: string;
+  name: string;
+  disabledAt?: number;
+  clicks: number;
+  visitors: number;
+  signups: number;
+  viaLink?: number;
+  viaCode?: number;
+  onboarded?: number;
+  walled?: number;
+  reachedCheckout?: number;
+  paying?: number;
+  mrr?: number;
+  /** Team workspaces bought by one of its signups, and their seats a month. */
+  teamPaying?: number;
+  teamMrr?: number;
+  /** Stripe's `times_redeemed` for the linked code, whoever redeemed it. */
+  promotionRedemptions?: number;
+};
+
+export type AffiliateStats = {
+  rows: AffiliateStatsRow[];
+  currency: string | null;
+  /** Paying accounts and Team workspaces Stripe gave no price for — not in any MRR. */
+  unpriced: number;
+  generatedAt: number;
+};
+
+/** One account a link brought, and how far it has got. */
+export type AffiliateAccount = {
+  ownerId: string;
+  email: string | null;
+  name: string | null;
+  via: "link" | "code";
+  attributedAt: number;
+  /** The click it was credited to — link attributions only. */
+  clickedAt?: number;
+  onboarded?: boolean;
+  walled?: boolean;
+  reachedCheckout?: boolean;
+  paying?: boolean;
+  /** Bought a Team plan that is being paid for. */
+  team?: boolean;
+};
+
+export type AffiliateDetail = {
+  affiliate: AffiliateRow;
+  /** Exactly 90 UTC days ending on `today`, oldest first, quiet days as zeros. */
+  days: { day: string; clicks: number; visitors: number }[];
+  /** The newest 200; `affiliate.signups` counts them all. */
+  accounts: AffiliateAccount[];
+};
+
+/** Where an affiliate's link lives. The slug is the whole of what is theirs. */
+export const AFFILIATE_LINK_BASE = "https://app.nootles.com/r/";
+
 export type UserRow = {
   ownerId: string;
   email: string | null;
@@ -684,4 +775,61 @@ export const adminApi = {
     { token: string; id: string; active: boolean },
     null
   >("adminBilling:discountSetActive"),
+
+  // ---- Affiliates (convex/adminBilling.ts) --------------------------------
+
+  /** Newest first. */
+  affiliateList: makeFunctionReference<"query", { token: string }, AffiliateRow[]>(
+    "adminBilling:affiliateList",
+  ),
+  /** The slug is normalized and checked there; a refusal is a readable sentence. */
+  affiliateCreate: makeFunctionReference<
+    "mutation",
+    {
+      token: string;
+      slug: string;
+      name: string;
+      note?: string;
+      destination?: string;
+      ownerId?: string;
+    },
+    string
+  >("adminBilling:affiliateCreate"),
+  /** An absent field is left alone; an empty note or a null owner clears it. */
+  affiliateUpdate: makeFunctionReference<
+    "mutation",
+    {
+      token: string;
+      id: string;
+      name?: string;
+      note?: string;
+      destination?: string;
+      ownerId?: string | null;
+    },
+    null
+  >("adminBilling:affiliateUpdate"),
+  affiliateSetDisabled: makeFunctionReference<
+    "mutation",
+    { token: string; id: string; disabled: boolean },
+    null
+  >("adminBilling:affiliateSetDisabled"),
+  /** An action: the code is looked up in Stripe. `null` unlinks it. */
+  affiliateLinkPromotion: makeFunctionReference<
+    "action",
+    { token: string; id: string; code: string | null },
+    { promotionCodeId: string; promotionCode: string } | null
+  >("adminBilling:affiliateLinkPromotion"),
+  /** An action: MRR and code redemptions are Stripe's. */
+  affiliateStats: makeFunctionReference<"action", { token: string }, AffiliateStats>(
+    "adminBilling:affiliateStats",
+  ),
+  /**
+   * `today` is the reader's UTC day, "YYYY-MM-DD": a query's clock is read once
+   * and cached, so without it a quiet link's chart would stop moving.
+   */
+  affiliateDetail: makeFunctionReference<
+    "query",
+    { token: string; id: string; today?: string },
+    AffiliateDetail
+  >("adminBilling:affiliateDetail"),
 };

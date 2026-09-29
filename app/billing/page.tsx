@@ -12,7 +12,7 @@ import {
   type RevenueReport,
 } from "@/lib/api";
 import { useAct } from "@/lib/act";
-import { day, shortUser, when } from "@/lib/format";
+import { cash, day, shortUser, when } from "@/lib/format";
 import { useAdminToken } from "@/lib/session";
 import { Empty, Instrument, Loading, Panel } from "../components/Bits";
 
@@ -143,15 +143,6 @@ export default function Billing() {
       <Stalled funnel={funnel} />
     </div>
   );
-}
-
-/** Cents to money, in whatever currency Stripe charged it in. */
-function cash(amount: number, currency: string | null): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: (currency ?? "usd").toUpperCase(),
-    minimumFractionDigits: amount % 100 === 0 ? 0 : 2,
-  }).format(amount / 100);
 }
 
 /**
